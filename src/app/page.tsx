@@ -14,11 +14,12 @@ import {
   getBreakingNews,
   articles,
 } from '@/lib/mock-data';
+import styles from './page.module.css';
 
 export const metadata: Metadata = {
   title: 'THE BRIEF — Serious Journalism for the Modern Reader',
   description:
-    'India\'s most trusted source for clear, concise news across Technology, AI, Business, India, World, and Science.',
+    "India's most trusted source for clear, concise news across Technology, AI, Business, India, World, and Science.",
   alternates: {
     canonical: '/',
   },
@@ -36,6 +37,8 @@ export default function HomePage() {
   const aiArticles = getArticlesByCategory('ai', 4);
   const businessArticles = getArticlesByCategory('business', 4);
   const scienceArticles = getArticlesByCategory('science', 4);
+  const gamingArticles = getArticlesByCategory('gaming', 4);
+  const entertainmentArticles = getArticlesByCategory('entertainment', 4);
 
   return (
     <>
@@ -44,26 +47,26 @@ export default function HomePage() {
 
       {/* Hero */}
       <section aria-label="Today's top stories">
-        <div className="container">
-          <HeroSection featured={featured} secondary={secondary} />
-        </div>
+        <HeroSection featured={featured} secondary={secondary} />
       </section>
 
       {/* Ad slot — after hero */}
-      <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '0.5rem' }}>
-        <AdSlot id="ad-post-hero" width={728} height={90} />
+      <div className="container">
+        <div className={styles.adRow}>
+          <AdSlot id="ad-post-hero" width={728} height={90} />
+        </div>
       </div>
 
       {/* Latest + Trending side by side */}
       <div className="container">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '4rem', alignItems: 'start' }}>
+        <div className={styles.latestTrendingGrid}>
           <LatestNewsFeed articles={latestArticles} />
           <TrendingSection articles={trendingArticles} />
         </div>
       </div>
 
       {/* Category Sections */}
-      <div className="container">
+      <div className={`container ${styles.categorySections}`}>
         {techArticles.length > 0 && (
           <CategorySection
             categoryName="Technology"
@@ -73,7 +76,7 @@ export default function HomePage() {
         )}
 
         {/* Mid-page ad */}
-        <div style={{ padding: '2rem 0' }}>
+        <div className={styles.adRow}>
           <AdSlot id="ad-mid-page" width={970} height={90} />
         </div>
 
@@ -106,6 +109,22 @@ export default function HomePage() {
             categoryName="Science"
             categorySlug="science"
             articles={scienceArticles}
+          />
+        )}
+
+        {gamingArticles.length > 0 && (
+          <CategorySection
+            categoryName="Gaming"
+            categorySlug="gaming"
+            articles={gamingArticles}
+          />
+        )}
+
+        {entertainmentArticles.length > 0 && (
+          <CategorySection
+            categoryName="Entertainment"
+            categorySlug="entertainment"
+            articles={entertainmentArticles}
           />
         )}
       </div>

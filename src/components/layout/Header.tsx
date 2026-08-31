@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Search, Menu, X } from 'lucide-react';
 import MobileMenu from './MobileMenu';
 import styles from './Header.module.css';
@@ -13,11 +14,14 @@ const NAV_LINKS = [
   { label: 'Technology', href: '/technology' },
   { label: 'AI', href: '/ai' },
   { label: 'Business', href: '/business' },
+  { label: 'Science', href: '/science' },
+  { label: 'Startups', href: '/startups' },
 ];
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 8);
@@ -32,12 +36,27 @@ export default function Header() {
     } else {
       document.body.style.overflow = '';
     }
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [menuOpen]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(href + '/');
+  };
 
   return (
     <>
-      <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`} role="banner">
+      <header
+        className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}
+        role="banner"
+      >
         <div className={`container ${styles.inner}`}>
 
           {/* Logo */}
@@ -48,7 +67,12 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className={styles.nav} aria-label="Primary navigation">
             {NAV_LINKS.map((link) => (
-              <Link key={link.href} href={link.href} className={styles.navLink}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`${styles.navLink} ${isActive(link.href) ? styles.navLinkActive : ''}`}
+                aria-current={isActive(link.href) ? 'page' : undefined}
+              >
                 {link.label}
               </Link>
             ))}
@@ -56,7 +80,11 @@ export default function Header() {
 
           {/* Right actions */}
           <div className={styles.actions}>
-            <Link href="/search" className={styles.iconBtn} aria-label="Search">
+            <Link
+              href="/search"
+              className={`${styles.iconBtn} ${pathname === '/search' ? styles.iconBtnActive : ''}`}
+              aria-label="Search"
+            >
               <Search size={18} strokeWidth={1.75} />
             </Link>
             <button
@@ -66,7 +94,11 @@ export default function Header() {
               aria-controls="mobile-menu"
               onClick={() => setMenuOpen((v) => !v)}
             >
-              {menuOpen ? <X size={20} strokeWidth={1.75} /> : <Menu size={20} strokeWidth={1.75} />}
+              {menuOpen ? (
+                <X size={20} strokeWidth={1.75} />
+              ) : (
+                <Menu size={20} strokeWidth={1.75} />
+              )}
             </button>
           </div>
 
@@ -78,6 +110,7 @@ export default function Header() {
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         links={NAV_LINKS}
+        currentPath={pathname}
       />
     </>
   );

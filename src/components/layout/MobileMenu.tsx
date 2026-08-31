@@ -10,6 +10,7 @@ interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   links: { label: string; href: string }[];
+  currentPath?: string;
 }
 
 const ALL_CATEGORIES = [
@@ -21,9 +22,10 @@ const ALL_CATEGORIES = [
   { label: 'Startups', href: '/startups' },
   { label: 'Science', href: '/science' },
   { label: 'Gaming', href: '/gaming' },
+  { label: 'Entertainment', href: '/entertainment' },
 ];
 
-export default function MobileMenu({ id, isOpen, onClose, links }: MobileMenuProps) {
+export default function MobileMenu({ id, isOpen, onClose, links, currentPath }: MobileMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape
@@ -44,6 +46,12 @@ export default function MobileMenu({ id, isOpen, onClose, links }: MobileMenuPro
       firstFocusable?.focus();
     }
   }, [isOpen]);
+
+  const isActive = (href: string) => {
+    if (!currentPath) return false;
+    if (href === '/') return currentPath === '/';
+    return currentPath === href || currentPath.startsWith(href + '/');
+  };
 
   return (
     <>
@@ -82,7 +90,12 @@ export default function MobileMenu({ id, isOpen, onClose, links }: MobileMenuPro
           <ul className={styles.navList}>
             {links.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className={styles.navItem} onClick={onClose}>
+                <Link
+                  href={link.href}
+                  className={`${styles.navItem} ${isActive(link.href) ? styles.navItemActive : ''}`}
+                  onClick={onClose}
+                  aria-current={isActive(link.href) ? 'page' : undefined}
+                >
                   {link.label}
                 </Link>
               </li>
@@ -93,7 +106,11 @@ export default function MobileMenu({ id, isOpen, onClose, links }: MobileMenuPro
           <ul className={styles.categoryList}>
             {ALL_CATEGORIES.map((cat) => (
               <li key={cat.href}>
-                <Link href={cat.href} className={styles.categoryItem} onClick={onClose}>
+                <Link
+                  href={cat.href}
+                  className={`${styles.categoryItem} ${isActive(cat.href) ? styles.categoryItemActive : ''}`}
+                  onClick={onClose}
+                >
                   {cat.label}
                 </Link>
               </li>
@@ -104,7 +121,7 @@ export default function MobileMenu({ id, isOpen, onClose, links }: MobileMenuPro
         <div className={styles.menuFooter}>
           <Link href="/about" onClick={onClose}>About</Link>
           <Link href="/contact" onClick={onClose}>Contact</Link>
-          <Link href="/sitemap.xml" onClick={onClose}>Sitemap</Link>
+          <Link href="/privacy" onClick={onClose}>Privacy</Link>
         </div>
       </div>
     </>

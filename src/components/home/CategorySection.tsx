@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Article } from '@/lib/types';
-import { formatRelativeTime, formatReadingTime } from '@/lib/utils';
+import { formatDate, formatReadingTime } from '@/lib/utils';
 import styles from './CategorySection.module.css';
 
 interface CategorySectionProps {
@@ -37,32 +37,49 @@ export default function CategorySection({ categoryName, categorySlug, articles }
             />
           </Link>
           <div className={styles.primaryContent}>
+            <Link href={`/${primary.category.slug}`} className="category-tag">
+              {primary.category.name}
+            </Link>
             <h3 className={styles.primaryHeadline}>
               <Link href={primaryUrl}>{primary.title}</Link>
             </h3>
             <p className={styles.primaryDesc}>{primary.description}</p>
             <div className={styles.primaryMeta}>
-              <time dateTime={primary.publishedAt}>{formatRelativeTime(primary.publishedAt)}</time>
+              <time dateTime={primary.publishedAt}>{formatDate(primary.publishedAt)}</time>
               <span aria-hidden="true">·</span>
               <span>{formatReadingTime(primary.readingTime)}</span>
             </div>
           </div>
         </article>
 
-        {/* Secondary stories */}
+        {/* Secondary stories with thumbnails */}
         <div className={styles.secondaryList}>
           {rest.slice(0, 3).map((article, i) => {
             const url = `/${article.category.slug}/${article.slug}`;
             return (
               <article key={article.id} className={styles.secondary}>
                 {i > 0 && <div className={styles.sep} aria-hidden="true" />}
-                <h3 className={styles.secondaryHeadline}>
-                  <Link href={url}>{article.title}</Link>
-                </h3>
-                <div className={styles.secondaryMeta}>
-                  <time dateTime={article.publishedAt}>{formatRelativeTime(article.publishedAt)}</time>
-                  <span aria-hidden="true">·</span>
-                  <span>{formatReadingTime(article.readingTime)}</span>
+                <div className={styles.secondaryInner}>
+                  <div className={styles.secondaryText}>
+                    <h3 className={styles.secondaryHeadline}>
+                      <Link href={url}>{article.title}</Link>
+                    </h3>
+                    <div className={styles.secondaryMeta}>
+                      <time dateTime={article.publishedAt}>{formatDate(article.publishedAt)}</time>
+                      <span aria-hidden="true">·</span>
+                      <span>{formatReadingTime(article.readingTime)}</span>
+                    </div>
+                  </div>
+                  <Link href={url} className={styles.secondaryImageWrapper} tabIndex={-1} aria-hidden="true">
+                    <Image
+                      src={article.featuredImage}
+                      alt={article.imageAlt}
+                      fill
+                      sizes="80px"
+                      className={styles.secondaryImage}
+                      loading="lazy"
+                    />
+                  </Link>
                 </div>
               </article>
             );
