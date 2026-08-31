@@ -1,0 +1,120 @@
+/* Header.module.css */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--header-height);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  transition: box-shadow var(--transition-base);
+}
+
+.header.scrolled {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: var(--space-6);
+}
+
+/* ── Logo ── */
+
+.logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.logoText {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  letter-spacing: 0.12em;
+  color: var(--color-text);
+  font-weight: 400;
+}
+
+/* ── Navigation ── */
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex: 1;
+  justify-content: center;
+}
+
+.navLink {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-4);
+  position: relative;
+  transition: color var(--transition-fast);
+  letter-spacing: 0.01em;
+}
+
+.navLink::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 1px;
+  background: var(--color-text);
+  transform: scaleX(0);
+  transition: transform var(--transition-fast);
+  transform-origin: left;
+}
+
+.navLink:hover {
+  color: var(--color-text);
+}
+
+.navLink:hover::after {
+  transform: scaleX(1);
+}
+
+/* ── Actions ── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.iconBtn:hover {
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 1023px) {
+  .nav {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .logoText {
+    font-size: 1rem;
+  }
+}

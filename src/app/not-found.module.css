@@ -1,0 +1,62 @@
+/* not-found.module.css */
+
+.page {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+}
+
+.inner {
+  padding: var(--space-20) 0;
+}
+
+.code {
+  font-family: var(--font-serif);
+  font-size: 7rem;
+  color: var(--color-border);
+  line-height: 1;
+  display: block;
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  font-weight: 400;
+  color: var(--color-text);
+  margin-bottom: var(--space-4);
+}
+
+.message {
+  font-size: var(--text-md);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-8);
+  max-width: 50ch;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.homeLink {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-accent);
+  transition: color var(--transition-fast);
+}
+
+.homeLink:hover {
+  color: var(--color-accent-dark);
+}
+
+.searchLink {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.searchLink:hover {
+  color: var(--color-text);
+}
