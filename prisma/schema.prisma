@@ -27,40 +27,96 @@ model Source {
 }
 
 model Category {
-  id          String     @id @default(uuid())
-  name        String
-  slug        String     @unique
-  sources     Source[]
-  items       NewsItem[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String         @id @default(uuid())
+  name           String
+  slug           String         @unique
+  description    String?
+  seoTitle       String?
+  seoDescription String?
+  enabled        Boolean        @default(true)
+  sources        Source[]
+  items          NewsItem[]
+  drafts         ArticleDraft[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model NewsItem {
-  id            String    @id @default(uuid())
+  id            String         @id @default(uuid())
   sourceId      String
-  source        Source    @relation(fields: [sourceId], references: [id])
+  source        Source         @relation(fields: [sourceId], references: [id])
   externalId    String?
   title         String
   description   String?
   originalUrl   String
-  normalizedUrl String    @unique
+  normalizedUrl String         @unique
   author        String?
   publishedAt   DateTime?
-  discoveredAt  DateTime  @default(now())
+  discoveredAt  DateTime       @default(now())
   imageUrl      String?
   imageAlt      String?
   categoryId    String?
-  category      Category? @relation(fields: [categoryId], references: [id])
-  status        String    @default("DISCOVERED") // DISCOVERED, REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
-  contentHash   String    @unique
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  status        String         @default("DISCOVERED") // DISCOVERED, REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
+  contentHash   String         @unique
+  internalNotes String?
+  checklist     String?        // JSON string of checklist items
+  drafts        ArticleDraft[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([publishedAt])
   @@index([sourceId])
   @@index([categoryId])
   @@index([status])
+}
+
+model ArticleDraft {
+  id               String    @id @default(uuid())
+  newsItemId       String?
+  newsItem         NewsItem? @relation(fields: [newsItemId], references: [id], onDelete: SetNull)
+  title            String
+  slug             String    @unique
+  excerpt          String
+  content          String
+  categoryId       String?
+  category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorName       String    @default("THE BRIEF Editorial Team")
+  authorId         String?
+  featuredImage    String?
+  imageAlt         String?
+  status           String    @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
+  seoTitle         String?
+  metaDescription  String?
+  canonicalUrl     String?
+  tags             String?   // JSON string of string[]
+  sources          String?   // JSON string of { name: string, url: string }[]
+  quickSummary     String?   // JSON string of string[]
+  whatYouNeedToKnow String?  // JSON string of { whatHappened, whyItMatters, keyDetails, whatsNext }
+  timeline         String?   // JSON string of { date, title, description }[]
+  internalNotes    String?
+  readingTime      Int       @default(3)
+  featured         Boolean   @default(false)
+  breaking         Boolean   @default(false)
+  publishedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+  @@index([slug])
+  @@index([publishedAt])
+  @@index([categoryId])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  user      String   @default("Admin Editor")
+  action    String   // news_collected, news_reviewed, news_rejected, news_approved, draft_created, draft_updated, article_published, article_archived, source_toggled
+  target    String?
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 model FetchLog {
@@ -76,3 +132,4 @@ model FetchLog {
   errorMessage String?
   createdAt    DateTime @default(now())
 }
+
