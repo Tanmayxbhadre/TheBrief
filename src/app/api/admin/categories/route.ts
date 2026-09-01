@@ -15,8 +15,9 @@ export async function GET() {
     });
 
     return NextResponse.json({ categories });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Server error';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -55,8 +56,9 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ success: true, category });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create category' }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to create category';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -70,7 +72,13 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Category ID is required' }, { status: 400 });
     }
 
-    const dataToUpdate: any = {};
+    const dataToUpdate: {
+      name?: string;
+      description?: string;
+      seoTitle?: string;
+      seoDescription?: string;
+      enabled?: boolean;
+    } = {};
     if (name !== undefined) dataToUpdate.name = name;
     if (description !== undefined) dataToUpdate.description = description;
     if (seoTitle !== undefined) dataToUpdate.seoTitle = seoTitle;
@@ -90,7 +98,8 @@ export async function PATCH(request: Request) {
     );
 
     return NextResponse.json({ success: true, category: updated });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Update failed' }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Update failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

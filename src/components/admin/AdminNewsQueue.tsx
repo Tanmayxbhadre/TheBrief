@@ -5,15 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  ExternalLink,
-  CheckCircle,
-  XCircle,
   FilePlus,
   Eye,
-  Archive,
   ChevronLeft,
   ChevronRight,
-  Filter,
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
 import styles from './AdminNewsQueue.module.css';
@@ -112,25 +107,6 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      const res = await fetch(`/api/admin/news/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (res.ok) {
-        setItems((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
-        );
-        showFeedback(`Story moved to ${newStatus}`);
-      }
-    } catch {
-      showFeedback('Failed to update status');
-    }
   };
 
   const handleCreateDraft = async (newsItemId: string) => {

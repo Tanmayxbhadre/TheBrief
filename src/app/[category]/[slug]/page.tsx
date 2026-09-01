@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import {
   getRelatedArticles,
   articles,
-  categories,
 } from '@/lib/mock-data';
 import { getPublishedArticleBySlug } from '@/lib/articles';
 import ArticleHeader from '@/components/article/ArticleHeader';
@@ -14,7 +13,6 @@ import Timeline from '@/components/article/Timeline';
 import RelatedStories from '@/components/article/RelatedStories';
 import AdSlot from '@/components/shared/AdSlot';
 import SchemaOrg from '@/components/seo/SchemaOrg';
-import styles from './article.module.css';
 
 interface Props {
   params: Promise<{ category: string; slug: string }>;

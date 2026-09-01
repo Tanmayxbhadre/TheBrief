@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Radio,
   RefreshCw,
   CheckCircle,
   AlertCircle,
@@ -52,7 +51,7 @@ export function SourceHealthManager() {
   const [collectionSummary, setCollectionSummary] = useState<CollectionResult | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const fetchSources = React.useCallback(async () => {
+  const refreshSourcesList = async () => {
     try {
       const res = await fetch('/api/admin/sources');
       const data = await res.json();
@@ -60,15 +59,34 @@ export function SourceHealthManager() {
         setSources(data.sources || []);
       }
     } catch (err) {
-      console.error('Failed to load sources:', err);
-    } finally {
-      setLoading(false);
+      console.error('Failed to reload sources:', err);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchSources();
-  }, [fetchSources]);
+    let ignore = false;
+    async function initSources() {
+      try {
+        const res = await fetch('/api/admin/sources');
+        const data = await res.json();
+        if (res.ok && !ignore) {
+          setSources(data.sources || []);
+        }
+      } catch (err) {
+        console.error('Failed to load sources:', err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    initSources();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleToggleSource = async (id: string, currentEnabled: boolean) => {
     try {
@@ -110,12 +128,13 @@ export function SourceHealthManager() {
       if (res.ok && data.success) {
         setCollectionSummary(data.data);
         setFeedback('News collection pipeline complete.');
-        fetchSources();
+        refreshSourcesList();
       } else {
         setFeedback(`Collection Error: ${data.error || 'Failed'}`);
       }
-    } catch (err: any) {
-      setFeedback(`Collection Error: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setFeedback(`Collection Error: ${msg}`);
     } finally {
       setFetchingAll(false);
     }

@@ -2,12 +2,21 @@ import { NextResponse } from 'next/server';
 import { getAdminSession, recordActivity } from '@/lib/auth';
 import { aiService } from '@/lib/ai/service';
 import { ImproveRequest } from '@/lib/ai/types';
+import { aiRateLimiter } from '@/lib/ai/rateLimit';
 
 export async function POST(request: Request) {
   try {
     const session = await getAdminSession();
     if (!session.authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateCheck = aiRateLimiter.check(session.user || 'admin', 20, 60_000);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'AI rate limit exceeded. Please wait a few moments before trying again.' },
+        { status: 429 }
+      );
     }
 
     const body = (await request.json()) as ImproveRequest;

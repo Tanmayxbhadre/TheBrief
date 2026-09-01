@@ -58,8 +58,9 @@ export async function GET() {
       recentActivity,
       recentStories,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Server error';
     console.error('Error fetching admin stats:', error);
-    return NextResponse.json({ error: error.message || 'Server error' }, { status: 500 });
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

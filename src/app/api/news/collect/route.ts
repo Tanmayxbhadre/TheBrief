@@ -26,10 +26,11 @@ export async function POST(request: Request) {
       data: summary
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Internal Server Error';
     console.error('Error in news collection endpoint:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal Server Error' },
+      { success: false, error: msg },
       { status: 500 }
     );
   }

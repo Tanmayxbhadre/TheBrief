@@ -15,8 +15,6 @@ import {
   AlertTriangle,
   Plus,
   Trash2,
-  Clock,
-  Check,
   X,
   Loader2,
 } from 'lucide-react';
@@ -248,8 +246,10 @@ export function StoryDetailInspector({ item }: StoryDetailInspectorProps) {
   const draft = hasDraft ? item.drafts[0] : null;
 
   // Check freshness (warning if > 18 hours old)
-  const ageMs = Date.now() - new Date(item.publishedAt || item.discoveredAt).getTime();
-  const isStale = ageMs > 18 * 60 * 60 * 1000;
+  const [isStale] = useState(() => {
+    const pubTime = new Date(item.publishedAt || item.discoveredAt).getTime();
+    return Date.now() - pubTime > 18 * 60 * 60 * 1000;
+  });
 
   return (
     <div className={styles.container}>

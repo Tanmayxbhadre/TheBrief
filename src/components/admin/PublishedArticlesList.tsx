@@ -3,15 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Globe,
   Search,
   ExternalLink,
   FileEdit,
   Archive,
   RotateCcw,
-  CheckCircle,
 } from 'lucide-react';
-import { formatDate, formatRelativeTime } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import styles from './DraftsList.module.css';
 
 interface PublishedArticleItem {

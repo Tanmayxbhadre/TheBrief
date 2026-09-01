@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Clock, Folder } from 'lucide-react';
+import { Clock, Folder } from 'lucide-react';
 import { NewsItem, Source, Category } from '@prisma/client';
 
 type NewsItemWithRelations = NewsItem & {

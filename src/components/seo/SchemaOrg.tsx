@@ -8,7 +8,7 @@ interface SchemaOrgProps {
   pageType?: 'home' | 'article' | 'category' | 'search';
 }
 
-export default function SchemaOrg({ article, pageType = 'home' }: SchemaOrgProps) {
+export default function SchemaOrg({ article }: SchemaOrgProps) {
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',

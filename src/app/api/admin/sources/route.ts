@@ -57,9 +57,10 @@ export async function GET() {
     });
 
     return NextResponse.json({ sources: sourcesWithHealth });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to fetch sources';
     console.error('Error fetching sources:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch sources' }, { status: 500 });
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -73,7 +74,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Source ID is required' }, { status: 400 });
     }
 
-    const dataToUpdate: any = {};
+    const dataToUpdate: {
+      enabled?: boolean;
+      priority?: number;
+      url?: string;
+    } = {};
     if (enabled !== undefined) dataToUpdate.enabled = enabled;
     if (priority !== undefined) dataToUpdate.priority = priority;
     if (url !== undefined) dataToUpdate.url = url;
@@ -91,7 +96,8 @@ export async function PATCH(request: Request) {
     );
 
     return NextResponse.json({ success: true, source: updated });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Update failed' }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Update failed';
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

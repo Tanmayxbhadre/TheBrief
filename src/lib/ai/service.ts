@@ -20,6 +20,7 @@ import { OpenAIProvider } from './providers/openai';
 import { GeminiProvider } from './providers/gemini';
 import { AnthropicProvider } from './providers/anthropic';
 import { prisma } from '../db';
+import { sanitizeStructuredAiOutput } from './sanitize';
 
 class AIService {
   private activeProvider: AIProvider;
@@ -81,7 +82,7 @@ class AIService {
         );
       }
 
-      response.draft = validation.data as StructuredArticleDraft;
+      response.draft = sanitizeStructuredAiOutput(validation.data as StructuredArticleDraft);
 
       // Sanitize markdown and fields
       response.draft.title = response.draft.title.trim();
@@ -162,6 +163,8 @@ class AIService {
         if (!v.success) throw new Error('Invalid fact check structure from AI');
         response.result = v.data;
       }
+
+      response.result = sanitizeStructuredAiOutput(response.result);
 
       await this.logGeneration({
         operation: req.action,

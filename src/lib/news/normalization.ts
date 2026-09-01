@@ -1,4 +1,3 @@
-import slugify from 'slugify';
 import crypto from 'crypto';
 
 /**
@@ -30,7 +29,7 @@ export function normalizeUrl(rawUrl: string): string {
     }
     
     return cleanUrl;
-  } catch (error) {
+  } catch {
     // If it's not a valid URL (e.g. relative path), just return as is or handle it
     return rawUrl;
   }

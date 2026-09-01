@@ -8,7 +8,6 @@ import NewsletterSignup from '@/components/home/NewsletterSignup';
 import AdSlot from '@/components/shared/AdSlot';
 import {
   getBreakingNews,
-  articles,
 } from '@/lib/mock-data';
 import {
   getAllPublishedArticles,

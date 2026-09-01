@@ -1,33 +1,27 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useMemo, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search as SearchIcon } from 'lucide-react';
 import { searchArticles } from '@/lib/mock-data';
-import { Article } from '@/lib/types';
 import { formatRelativeTime, formatReadingTime } from '@/lib/utils';
 import styles from './search.module.css';
 
 function SearchResults() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const [input, setInput] = useState(query);
-  const [results, setResults] = useState<Article[]>([]);
 
-  useEffect(() => {
-    if (query) {
-      setResults(searchArticles(query));
-    }
+  const results = useMemo(() => {
+    return query ? searchArticles(query) : [];
   }, [query]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      const url = new URL(window.location.href);
-      url.searchParams.set('q', input.trim());
-      window.history.pushState({}, '', url.toString());
-      setResults(searchArticles(input.trim()));
+      router.push(`/search?q=${encodeURIComponent(input.trim())}`);
     }
   };
 

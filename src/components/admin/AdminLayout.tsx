@@ -44,7 +44,7 @@ export function AdminLayoutClient({ children, user = 'Editor', counts }: AdminLa
       const data = await res.json();
 
       if (res.ok && data.success) {
-        const { newItems, duplicates, failedSources, sourcesProcessed } = data.data;
+        const { newItems, duplicates, sourcesProcessed } = data.data;
         setCollectionStatus(
           `Complete! ${newItems} new stories found, ${duplicates} duplicates from ${sourcesProcessed} sources.`
         );

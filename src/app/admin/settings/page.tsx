@@ -2,7 +2,7 @@ import React from 'react';
 import { prisma } from '@/lib/db';
 import { getAdminSession } from '@/lib/auth';
 import { aiService } from '@/lib/ai/service';
-import { Shield, Server, Radio, Database, CheckCircle2, Lock, Sparkles, Cpu } from 'lucide-react';
+import { Shield, Database, Lock, Sparkles } from 'lucide-react';
 import styles from './settings.module.css';
 
 export const dynamic = 'force-dynamic';

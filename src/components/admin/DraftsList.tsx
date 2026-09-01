@@ -8,9 +8,6 @@ import {
   Search,
   FileEdit,
   Trash2,
-  ExternalLink,
-  CheckCircle,
-  Clock,
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
 import styles from './DraftsList.module.css';

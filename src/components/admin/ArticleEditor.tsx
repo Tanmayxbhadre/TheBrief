@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -10,21 +10,13 @@ import {
   Globe,
   Plus,
   Trash2,
-  ExternalLink,
-  Check,
   AlertTriangle,
-  FileText,
   Sparkles,
   RefreshCw,
-  Tag,
   Wand2,
-  SearchCheck,
-  CheckSquare,
-  ShieldCheck,
   X,
   Loader2,
   ChevronRight,
-  Info,
 } from 'lucide-react';
 import slugify from 'slugify';
 import { ArticleLivePreviewModal } from './ArticleLivePreviewModal';
@@ -131,10 +123,23 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
     return [''];
   });
 
-  const [whatHappened, setWhatHappened] = useState('');
-  const [whyItMatters, setWhyItMatters] = useState('');
-  const [keyDetails, setKeyDetails] = useState<string[]>(['']);
-  const [whatsNext, setWhatsNext] = useState('');
+  const parsedWhatYouNeedToKnow = React.useMemo(() => {
+    try {
+      if (initialDraft.whatYouNeedToKnow) {
+        return JSON.parse(initialDraft.whatYouNeedToKnow);
+      }
+    } catch {}
+    return null;
+  }, [initialDraft.whatYouNeedToKnow]);
+
+  const [whatHappened, setWhatHappened] = useState(parsedWhatYouNeedToKnow?.whatHappened || '');
+  const [whyItMatters, setWhyItMatters] = useState(parsedWhatYouNeedToKnow?.whyItMatters || '');
+  const [keyDetails, setKeyDetails] = useState<string[]>(
+    Array.isArray(parsedWhatYouNeedToKnow?.keyDetails) && parsedWhatYouNeedToKnow.keyDetails.length > 0
+      ? parsedWhatYouNeedToKnow.keyDetails
+      : ['']
+  );
+  const [whatsNext, setWhatsNext] = useState(parsedWhatYouNeedToKnow?.whatsNext || '');
 
   const [timelineEvents, setTimelineEvents] = useState<
     { date: string; title: string; description: string }[]
@@ -165,6 +170,7 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [runningAiAction, setRunningAiAction] = useState<string | null>(null);
+  const [generationStep, setGenerationStep] = useState<string>('');
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
   const [altHeadlines, setAltHeadlines] = useState<string[]>([]);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
@@ -182,25 +188,6 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
   const [feedback, setFeedback] = useState<string | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
-
-  // Initialize structured data on load
-  useEffect(() => {
-    try {
-      if (initialDraft.whatYouNeedToKnow) {
-        const parsed = JSON.parse(initialDraft.whatYouNeedToKnow);
-        if (parsed) {
-          if (parsed.whatHappened) setWhatHappened(parsed.whatHappened);
-          if (parsed.whyItMatters) setWhyItMatters(parsed.whyItMatters);
-          if (Array.isArray(parsed.keyDetails) && parsed.keyDetails.length > 0) {
-            setKeyDetails(parsed.keyDetails);
-          }
-          if (parsed.whatsNext) setWhatsNext(parsed.whatsNext);
-        }
-      }
-    } catch {}
-  }, [initialDraft.whatYouNeedToKnow]);
-
-  // Track changes
   const markDirty = () => {
     if (!isDirty) setIsDirty(true);
   };
@@ -520,6 +507,23 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
     setRunningAiAction('regenerate');
     setShowRegenerateConfirm(false);
 
+    const steps = [
+      'Preparing sources & wire context...',
+      'Analyzing story & factual claims...',
+      'Synthesizing structured article & summary...',
+      'Generating SEO metadata & timeline...',
+      'Validating output schema & saving draft...',
+    ];
+
+    let stepIdx = 0;
+    setGenerationStep(steps[0]);
+    const stepInterval = setInterval(() => {
+      stepIdx++;
+      if (stepIdx < steps.length) {
+        setGenerationStep(steps[stepIdx]);
+      }
+    }, 900);
+
     try {
       const cleanSources = sources.filter((s) => s.name.trim() && s.url.trim());
       const res = await fetch('/api/admin/ai/draft', {
@@ -532,6 +536,7 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
         }),
       });
 
+      clearInterval(stepInterval);
       const data = await res.json();
       if (res.ok && data.draft) {
         // Refresh with new data
@@ -747,6 +752,87 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
           >
             Dismiss All
           </button>
+        </div>
+      )}
+
+      {/* AI Fact-Check Claims Panel (Sections 25, 33) */}
+      {factCheckClaims.length > 0 && (
+        <div
+          style={{
+            padding: '0.85rem 1.15rem',
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '6px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.6rem',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.825rem', fontWeight: 700, color: '#0f172a' }}>
+              AI Claim Fact-Checking ({factCheckClaims.length} evaluated)
+            </span>
+            <span style={{ fontSize: '0.72rem', color: '#64748b', fontStyle: 'italic' }}>
+              AI-assisted verification. Editor confirmation required.
+            </span>
+            <button
+              onClick={() => setFactCheckClaims([])}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#64748b',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            {factCheckClaims.map((item, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '4px',
+                  fontSize: '0.8rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      padding: '0.1rem 0.4rem',
+                      borderRadius: '3px',
+                      backgroundColor:
+                        item.status === 'verified'
+                          ? '#dcfce7'
+                          : item.status === 'conflicting'
+                          ? '#fee2e2'
+                          : '#fef3c7',
+                      color:
+                        item.status === 'verified'
+                          ? '#166534'
+                          : item.status === 'conflicting'
+                          ? '#991b1b'
+                          : '#92400e',
+                    }}
+                  >
+                    {item.status}
+                  </span>
+                  <span style={{ fontWeight: 600, color: '#1e293b' }}>{item.claim}</span>
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  {item.note} {item.sourceAttribution ? `• Source: ${item.sourceAttribution}` : ''}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1155,6 +1241,19 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
                 </button>
               </div>
 
+              {aiProviderInfo && (
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                  Engine: <strong style={{ color: '#e2e8f0' }}>{aiProviderInfo}</strong>
+                </div>
+              )}
+
+              {runningAiAction === 'regenerate' && generationStep && (
+                <div style={{ padding: '0.5rem 0.65rem', backgroundColor: '#0f172a', border: '1px solid #38bdf8', borderRadius: '4px', fontSize: '0.75rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Loader2 size={13} className={styles.spinner} />
+                  <span>{generationStep}</span>
+                </div>
+              )}
+
               {aiFeedback && (
                 <div style={{ padding: '0.4rem 0.6rem', backgroundColor: '#334155', borderRadius: '4px', fontSize: '0.75rem', color: '#38bdf8' }}>
                   {aiFeedback}
@@ -1521,6 +1620,20 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
             </div>
 
             <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Canonical URL (Optional)</label>
+              <input
+                type="url"
+                className={styles.input}
+                value={canonicalUrl}
+                onChange={(e) => {
+                  setCanonicalUrl(e.target.value);
+                  markDirty();
+                }}
+                placeholder="https://thebrief.in/..."
+              />
+            </div>
+
+            <div className={styles.fieldGroup}>
               <label className={styles.fieldLabel}>Topic Tags (Comma-separated)</label>
               <input
                 type="text"
@@ -1685,8 +1798,13 @@ export function ArticleEditor({ initialDraft, categories }: ArticleEditorProps) 
                 Regenerate AI Draft?
               </h3>
             </div>
+            {isDirty && (
+              <div style={{ padding: '0.5rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '4px', fontSize: '0.775rem', color: '#991b1b', fontWeight: 600 }}>
+                ⚠️ Warning: You have unsaved manual edits that will be permanently overwritten.
+              </div>
+            )}
             <p style={{ fontSize: '0.825rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
-              Regenerating will replace your current draft content, headline, summary, and structured sections with a freshly synthesized AI version. Any manual edits made to this draft will be overwritten.
+              Regenerating will replace your current draft content, headline, summary, and structured sections with a freshly synthesized AI version.
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
               <button

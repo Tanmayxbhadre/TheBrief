@@ -34,8 +34,8 @@ function LoginForm() {
 
       router.push(next);
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Unable to sign in. Please verify your credentials.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in. Please verify your credentials.');
     } finally {
       setLoading(false);
     }

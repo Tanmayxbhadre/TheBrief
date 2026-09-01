@@ -17,7 +17,7 @@ interface AdminNewsClientProps {
 }
 
 export function AdminNewsClient({ initialItems, categories }: AdminNewsClientProps) {
-  const [items, setItems] = useState<NewsItemWithRelations[]>(initialItems);
+  const items = initialItems;
   const [selectedItem, setSelectedItem] = useState<NewsItemWithRelations | null>(null);
   
   const [searchQuery, setSearchQuery] = useState('');

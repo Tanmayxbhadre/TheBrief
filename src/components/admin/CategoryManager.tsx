@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FolderTree, Plus, Save, Edit3, Check, X } from 'lucide-react';
+import { Edit3, Check, X } from 'lucide-react';
 import styles from './DraftsList.module.css';
 
 interface CategoryItem {
@@ -32,23 +32,30 @@ export function CategoryManager() {
 
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const fetchCategories = React.useCallback(async () => {
-    try {
-      const res = await fetch('/api/admin/categories');
-      const data = await res.json();
-      if (res.ok) {
-        setCategories(data.categories || []);
-      }
-    } catch (err) {
-      console.error('Failed to load categories:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    let ignore = false;
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/admin/categories');
+        const data = await res.json();
+        if (res.ok && !ignore) {
+          setCategories(data.categories || []);
+        }
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCategories();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleStartEdit = (cat: CategoryItem) => {
     setEditingId(cat.id);

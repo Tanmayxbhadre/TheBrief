@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Article } from '@/lib/types';
-import { formatTime, formatDate } from '@/lib/utils';
+import { formatTime } from '@/lib/utils';
 import styles from './LatestNewsFeed.module.css';
 
 interface LatestNewsFeedProps {
@@ -18,7 +18,7 @@ export default function LatestNewsFeed({ articles }: LatestNewsFeedProps) {
       </div>
 
       <ol className={styles.feed} aria-label="Latest news articles in chronological order">
-        {articles.map((article, i) => {
+        {articles.map((article) => {
           const url = `/${article.category.slug}/${article.slug}`;
           return (
             <li key={article.id} className={styles.item}>
