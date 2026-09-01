@@ -52,6 +52,7 @@ export async function fetchRssFeed(source: NewsSourceConfig): Promise<ParsedNews
         }
       }
 
+      const extId = item.guid || (typeof item === 'object' && item && 'id' in item ? String((item as { id: unknown }).id) : undefined);
       items.push({
         title: item.title.trim(),
         originalUrl: item.link.trim(),
@@ -59,13 +60,14 @@ export async function fetchRssFeed(source: NewsSourceConfig): Promise<ParsedNews
         publishedAt,
         author: item.creator || item.author || item['dc:creator'],
         imageUrl,
-        externalId: item.guid || item.id,
+        externalId: extId,
       });
     }
 
     return items;
-  } catch (error: any) {
-    console.error(`Failed to fetch RSS feed for ${source.id}:`, error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown RSS fetch error';
+    console.error(`Failed to fetch RSS feed for ${source.id}:`, message);
     throw error;
   }
 }

@@ -125,9 +125,9 @@ export async function collectAllNews(): Promise<CollectionSummary> {
       summary.successfulSources++;
       console.log(`[NEWS] Source ${sourceConfig.name} success: ${newItems} new, ${duplicates} duplicates.`);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       summary.failedSources++;
-      errorMessage = error.message || 'Unknown error';
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[NEWS] Source ${sourceConfig.name} failed: ${errorMessage}`);
       
       // Update source health on error

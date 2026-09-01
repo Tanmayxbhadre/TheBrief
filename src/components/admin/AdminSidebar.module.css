@@ -1,0 +1,207 @@
+.sidebar {
+  width: 260px;
+  background-color: #ffffff;
+  border-right: 1px solid var(--color-border, #e6e6e3);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  transition: transform 0.2s ease;
+}
+
+.brand {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #e6e6e3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logoArea {
+  display: flex;
+  flex-direction: column;
+}
+
+.logoText {
+  font-family: var(--font-serif, 'DM Serif Display', Georgia, serif);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-accent, #1a3a8b);
+  line-height: 1.1;
+}
+
+.subBrand {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #666666);
+  margin-top: 2px;
+}
+
+.closeBtn {
+  display: none;
+  padding: 0.25rem;
+  color: var(--color-text-secondary, #666666);
+}
+
+.nav {
+  flex: 1;
+  padding: 1rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow-y: auto;
+}
+
+.navSectionLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #999999);
+  padding: 0.5rem 0.75rem 0.25rem;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.825rem;
+  font-weight: 500;
+  color: var(--color-text, #171717);
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  position: relative;
+}
+
+.navLink:hover {
+  background-color: var(--color-bg-secondary, #f7f7f5);
+  color: var(--color-accent, #1a3a8b);
+}
+
+.navLinkActive {
+  background-color: var(--color-accent-light, #e8edf8);
+  color: var(--color-accent, #1a3a8b);
+  font-weight: 600;
+}
+
+.navLinkActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background-color: var(--color-accent, #1a3a8b);
+  border-radius: 0 2px 2px 0;
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.1rem 0.45rem;
+  border-radius: 10px;
+  background-color: var(--color-bg-tertiary, #f0f0ed);
+  color: var(--color-text-secondary, #666666);
+}
+
+.badgeActive {
+  background-color: #ffffff;
+  color: var(--color-accent, #1a3a8b);
+}
+
+.footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border, #e6e6e3);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.userAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-accent, #1a3a8b);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text, #171717);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userRole {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary, #666666);
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #666666);
+  border: 1px solid var(--color-border, #e6e6e3);
+  border-radius: 4px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.logoutBtn:hover {
+  background-color: #fdf2f1;
+  border-color: #f8d7da;
+  color: #c0392b;
+}
+
+/* Mobile Drawer */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .closeBtn {
+    display: block;
+  }
+}

@@ -9,7 +9,8 @@ export async function POST() {
     }
     await clearAdminSessionCookie();
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Logout failed' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Logout failed';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

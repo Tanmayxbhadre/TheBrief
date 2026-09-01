@@ -1,8 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Link2, Twitter, Share2, Check } from 'lucide-react';
+import { Link2, Share2, Check } from 'lucide-react';
 import styles from './ShareButtons.module.css';
+
+const XTwitterIcon = ({ size = 15 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 interface ShareButtonsProps {
   title: string;
@@ -67,7 +73,7 @@ export default function ShareButtons({ title, url }: ShareButtonsProps) {
         aria-label="Share on X (Twitter)"
         title="Share on X (Twitter)"
       >
-        <Twitter size={15} strokeWidth={2} />
+        <XTwitterIcon size={14} />
         <span>Share</span>
       </a>
 

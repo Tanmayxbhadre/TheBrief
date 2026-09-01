@@ -7,13 +7,14 @@ import TrendingSection from '@/components/home/TrendingSection';
 import NewsletterSignup from '@/components/home/NewsletterSignup';
 import AdSlot from '@/components/shared/AdSlot';
 import {
-  getFeaturedArticle,
-  getLatestArticles,
-  getTrendingArticles,
-  getArticlesByCategory,
   getBreakingNews,
   articles,
 } from '@/lib/mock-data';
+import {
+  getAllPublishedArticles,
+  getLatestPublishedArticles,
+  getPublishedArticlesByCategory,
+} from '@/lib/articles';
 import styles from './page.module.css';
 
 export const metadata: Metadata = {
@@ -25,20 +26,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
-  const featured = getFeaturedArticle();
-  const secondary = articles.filter((a) => a.id !== featured.id && a.featured).slice(0, 3);
-  const latestArticles = getLatestArticles(8);
-  const trendingArticles = getTrendingArticles(5);
+export default async function HomePage() {
+  const allArticles = await getAllPublishedArticles();
+  const featured = allArticles.find((a) => a.featured) || allArticles[0];
+  const secondary = allArticles.filter((a) => a.id !== featured.id && a.featured).slice(0, 3);
+  const latestArticles = await getLatestPublishedArticles(8);
+  const trendingArticles = allArticles.slice(0, 5);
   const breakingItem = getBreakingNews();
 
-  const techArticles = getArticlesByCategory('technology', 4);
-  const indiaArticles = getArticlesByCategory('india', 4);
-  const aiArticles = getArticlesByCategory('ai', 4);
-  const businessArticles = getArticlesByCategory('business', 4);
-  const scienceArticles = getArticlesByCategory('science', 4);
-  const gamingArticles = getArticlesByCategory('gaming', 4);
-  const entertainmentArticles = getArticlesByCategory('entertainment', 4);
+  const techArticles = await getPublishedArticlesByCategory('technology', 4);
+  const indiaArticles = await getPublishedArticlesByCategory('india', 4);
+  const aiArticles = await getPublishedArticlesByCategory('ai', 4);
+  const businessArticles = await getPublishedArticlesByCategory('business', 4);
+  const scienceArticles = await getPublishedArticlesByCategory('science', 4);
+  const gamingArticles = await getPublishedArticlesByCategory('gaming', 4);
+  const entertainmentArticles = await getPublishedArticlesByCategory('entertainment', 4);
 
   return (
     <>

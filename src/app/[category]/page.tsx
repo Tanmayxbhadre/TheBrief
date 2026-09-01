@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getCategoryBySlug, getArticlesByCategory, categories } from '@/lib/mock-data';
+import { getCategoryBySlug, categories } from '@/lib/mock-data';
+import { getPublishedArticlesByCategory } from '@/lib/articles';
 import { formatRelativeTime, formatReadingTime } from '@/lib/utils';
 import AdSlot from '@/components/shared/AdSlot';
 import styles from './category.module.css';
@@ -38,7 +39,7 @@ export default async function CategoryPage({ params }: Props) {
   const category = getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const categoryArticles = getArticlesByCategory(slug);
+  const categoryArticles = await getPublishedArticlesByCategory(slug);
   if (!categoryArticles.length) notFound();
 
   const [featured, ...rest] = categoryArticles;

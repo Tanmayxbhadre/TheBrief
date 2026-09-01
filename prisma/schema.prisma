@@ -98,6 +98,11 @@ model ArticleDraft {
   readingTime      Int       @default(3)
   featured         Boolean   @default(false)
   breaking         Boolean   @default(false)
+  aiGenerated      Boolean   @default(false)
+  aiProvider       String?
+  aiModel          String?
+  aiFlags          String?   // JSON string of { needsVerification: boolean, verificationNotes: string[] }
+  generationLogs   AIGenerationLog[]
   publishedAt      DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -108,10 +113,34 @@ model ArticleDraft {
   @@index([categoryId])
 }
 
+model AIGenerationLog {
+  id           String        @id @default(uuid())
+  operation    String        // draft_generation, headline, summary, seo, tags, rewrite, fact_check
+  provider     String        // openai, gemini, anthropic, mock
+  model        String
+  newsItemId   String?
+  draftId      String?
+  draft        ArticleDraft? @relation(fields: [draftId], references: [id], onDelete: SetNull)
+  inputTokens  Int?
+  outputTokens Int?
+  totalTokens  Int?
+  durationMs   Int           @default(0)
+  status       String        @default("SUCCESS") // SUCCESS, FAILED
+  errorMessage String?
+  reviewFlags  String?       // JSON string of verification flags
+  user         String        @default("Admin Editor")
+  createdAt    DateTime      @default(now())
+
+  @@index([operation])
+  @@index([provider])
+  @@index([draftId])
+  @@index([createdAt])
+}
+
 model ActivityLog {
   id        String   @id @default(uuid())
   user      String   @default("Admin Editor")
-  action    String   // news_collected, news_reviewed, news_rejected, news_approved, draft_created, draft_updated, article_published, article_archived, source_toggled
+  action    String   // news_collected, news_reviewed, news_rejected, news_approved, draft_created, draft_updated, article_published, article_archived, source_toggled, ai_draft_generated, ai_improved
   target    String?
   details   String?
   createdAt DateTime @default(now())
@@ -132,4 +161,5 @@ model FetchLog {
   errorMessage String?
   createdAt    DateTime @default(now())
 }
+
 

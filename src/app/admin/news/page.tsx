@@ -1,35 +1,25 @@
+import React from 'react';
 import { prisma } from '@/lib/db';
-import { AdminNewsClient } from '@/components/admin/AdminNewsClient';
+import { AdminNewsQueue } from '@/components/admin/AdminNewsQueue';
 
-// Ensure the page is dynamically rendered since it fetches real-time DB data
 export const dynamic = 'force-dynamic';
 
 export default async function AdminNewsPage() {
-  const [newsItems, categories] = await Promise.all([
-    prisma.newsItem.findMany({
-      where: {
-        status: { in: ['DISCOVERED', 'REVIEW'] }
-      },
-      include: {
-        source: true,
-        category: true
-      },
-      orderBy: {
-        discoveredAt: 'desc'
-      },
-      take: 100 // Limit for initial load
-    }),
+  const [categories, sources] = await Promise.all([
     prisma.category.findMany({
-      orderBy: {
-        name: 'asc'
-      }
-    })
+      select: { id: true, name: true, slug: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.source.findMany({
+      select: { id: true, name: true },
+      orderBy: { priority: 'asc' },
+    }),
   ]);
 
   return (
-    <AdminNewsClient 
-      initialItems={newsItems} 
-      categories={categories} 
+    <AdminNewsQueue
+      initialCategories={categories}
+      initialSources={sources}
     />
   );
 }

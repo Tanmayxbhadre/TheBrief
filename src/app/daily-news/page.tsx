@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getLatestArticles, getArticlesByCategory, categories } from '@/lib/mock-data';
+import { categories } from '@/lib/mock-data';
+import { getLatestPublishedArticles, getPublishedArticlesByCategory } from '@/lib/articles';
 import { formatDate, formatTime, formatReadingTime } from '@/lib/utils';
 import styles from './daily-news.module.css';
 
@@ -10,16 +11,18 @@ export const metadata: Metadata = {
   alternates: { canonical: '/daily-news' },
 };
 
-export default function DailyNewsPage() {
+export default async function DailyNewsPage() {
   const today = new Date().toISOString();
-  const allArticles = getLatestArticles(20);
+  const allArticles = await getLatestPublishedArticles(20);
 
-  const categoryGroups = categories
-    .map((cat) => ({
-      category: cat,
-      articles: getArticlesByCategory(cat.slug, 3),
-    }))
-    .filter((g) => g.articles.length > 0);
+  const categoryGroups = (
+    await Promise.all(
+      categories.map(async (cat) => ({
+        category: cat,
+        articles: await getPublishedArticlesByCategory(cat.slug, 3),
+      }))
+    )
+  ).filter((g) => g.articles.length > 0);
 
   return (
     <div className={styles.page}>

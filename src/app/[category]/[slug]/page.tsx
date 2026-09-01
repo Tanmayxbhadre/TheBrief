@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import {
-  getArticleBySlug,
   getRelatedArticles,
   articles,
   categories,
 } from '@/lib/mock-data';
+import { getPublishedArticleBySlug } from '@/lib/articles';
 import ArticleHeader from '@/components/article/ArticleHeader';
 import ArticleBody from '@/components/article/ArticleBody';
 import QuickSummary from '@/components/article/QuickSummary';
@@ -29,7 +29,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getPublishedArticleBySlug(slug);
   if (!article) return {};
 
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thebrief.in';
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Props) {
   const { category, slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getPublishedArticleBySlug(slug);
 
   if (!article || article.category.slug !== category) notFound();
 

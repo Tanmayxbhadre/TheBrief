@@ -16,8 +16,8 @@ export function calculateReadingTime(content: string): number {
  * Format a date string to a readable format.
  * e.g. "August 31, 2026"
  */
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+export function formatDate(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   return date.toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'long',
@@ -29,8 +29,8 @@ export function formatDate(dateString: string): string {
  * Format a date string to a short readable format.
  * e.g. "Aug 31, 2026"
  */
-export function formatDateShort(dateString: string): string {
-  const date = new Date(dateString);
+export function formatDateShort(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   return date.toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'short',
@@ -55,8 +55,8 @@ export function formatTime(dateString: string): string {
  * Return a human-friendly relative time.
  * e.g. "2 hours ago", "just now", "3 days ago"
  */
-export function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
+export function formatRelativeTime(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -68,7 +68,7 @@ export function formatRelativeTime(dateString: string): string {
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays === 1) return 'Yesterday';
   if (diffDays < 7) return `${diffDays} days ago`;
-  return formatDateShort(dateString);
+  return formatDateShort(dateInput);
 }
 
 /**

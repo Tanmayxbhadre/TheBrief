@@ -1,25 +1,8 @@
 import type { Metadata } from 'next';
-import { DM_Serif_Display, Inter } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import SchemaOrg from '@/components/seo/SchemaOrg';
-
-const dmSerifDisplay = DM_Serif_Display({
-  weight: ['400'],
-  style: ['normal', 'italic'],
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  preload: true,
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
-  preload: true,
-});
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thebrief.in';
 
@@ -78,7 +61,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${dmSerifDisplay.variable} ${inter.variable}`}>
+    <html lang="en">
       <head>
         <SchemaOrg pageType="home" />
       </head>

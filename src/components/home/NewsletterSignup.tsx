@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import styles from './NewsletterSignup.module.css';
 
 export default function NewsletterSignup() {
@@ -57,7 +58,7 @@ export default function NewsletterSignup() {
             )}
             <p className={styles.privacy}>
               No spam. Unsubscribe anytime. See our{' '}
-              <a href="/privacy">Privacy Policy</a>.
+              <Link href="/privacy">Privacy Policy</Link>.
             </p>
           </form>
         )}
