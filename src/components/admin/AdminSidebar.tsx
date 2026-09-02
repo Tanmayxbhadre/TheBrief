@@ -14,6 +14,7 @@ import {
   LogOut,
   X,
   ExternalLink,
+  Activity,
 } from 'lucide-react';
 import styles from './AdminSidebar.module.css';
 
@@ -46,6 +47,7 @@ export function AdminSidebar({ isOpen, onClose, user = 'Editor', counts }: Admin
     { label: 'News Queue', href: '/admin/news', icon: Newspaper, count: counts?.discovered },
     { label: 'Drafts', href: '/admin/drafts', icon: FileEdit, count: counts?.drafts },
     { label: 'Published', href: '/admin/articles', icon: Globe },
+    { label: 'News Collection', href: '/admin/collection', icon: Activity },
     { label: 'Sources & Health', href: '/admin/sources', icon: Radio },
     { label: 'Categories', href: '/admin/categories', icon: FolderTree },
     { label: 'Settings', href: '/admin/settings', icon: Settings },

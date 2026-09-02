@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsc scripts/runTests.ts --outDir .dist_test --module commonjs --target es2020 --moduleResolution node --esModuleInterop --skipLibCheck && node .dist_test/scripts/runTests.js && rm -rf .dist_test",
-    "news:collect": "tsx scripts/collectNews.ts"
+    "news:collect": "tsx scripts/collectNews.ts",
+    "news:watch": "tsx scripts/watchNews.ts"
   },
   "dependencies": {
     "lucide-react": "^1.38.0",

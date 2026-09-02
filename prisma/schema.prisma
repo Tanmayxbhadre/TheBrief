@@ -18,12 +18,14 @@ model Source {
   language    String?
   enabled     Boolean    @default(true)
   priority    Int        @default(1)
-  lastFetch   DateTime?
-  lastError   String?
-  items       NewsItem[]
-  logs        FetchLog[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  lastFetch            DateTime?
+  lastSuccessfulFetch  DateTime?
+  lastError            String?
+  consecutiveFailures  Int        @default(0)
+  items                NewsItem[]
+  logs                 FetchLog[]
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 }
 
 model Category {
@@ -160,6 +162,35 @@ model FetchLog {
   duplicates   Int      @default(0)
   errorMessage String?
   createdAt    DateTime @default(now())
+}
+
+model CollectionJobLock {
+  id         String   @id @default(uuid())
+  jobName    String   @unique
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+}
+
+model CollectionJob {
+  id                String    @id @default(uuid())
+  trigger           String    @default("cron") // cron, manual, cli, watch, webhook
+  startedAt         DateTime  @default(now())
+  completedAt       DateTime?
+  status            String    @default("RUNNING") // RUNNING, COMPLETED, PARTIAL, FAILED, SKIPPED
+  sourcesProcessed  Int       @default(0)
+  successfulSources Int       @default(0)
+  failedSources     Int       @default(0)
+  itemsFound        Int       @default(0)
+  itemsInserted     Int       @default(0)
+  duplicates        Int       @default(0)
+  errorCount        Int       @default(0)
+  durationMs        Int       @default(0)
+  errorMessage      String?
+  sourceErrors      String?   // JSON string of { sourceId: string, sourceName: string, error: string }[]
+  createdAt         DateTime  @default(now())
+
+  @@index([startedAt])
+  @@index([status])
 }
 
 

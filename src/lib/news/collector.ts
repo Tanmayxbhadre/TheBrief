@@ -4,6 +4,12 @@ import { fetchRssFeed } from './rssFetcher';
 import { normalizeUrl, generateContentHash } from './normalization';
 import { classifyCategory } from './classifier';
 
+export interface SourceFailureRecord {
+  sourceId: string;
+  sourceName: string;
+  error: string;
+}
+
 export interface CollectionSummary {
   sourcesProcessed: number;
   successfulSources: number;
@@ -11,11 +17,13 @@ export interface CollectionSummary {
   itemsFound: number;
   newItems: number;
   duplicates: number;
+  sourceErrors?: SourceFailureRecord[];
 }
 
 export async function collectAllNews(): Promise<CollectionSummary> {
   const sources = getEnabledSources();
-  
+  const sourceErrors: SourceFailureRecord[] = [];
+
   const summary: CollectionSummary = {
     sourcesProcessed: sources.length,
     successfulSources: 0,
@@ -23,16 +31,17 @@ export async function collectAllNews(): Promise<CollectionSummary> {
     itemsFound: 0,
     newItems: 0,
     duplicates: 0,
+    sourceErrors,
   };
 
   for (const sourceConfig of sources) {
     console.log(`[NEWS] Fetching source: ${sourceConfig.name}`);
     const startedAt = new Date();
-    
+
     // Ensure source exists in DB
-    let dbSource = await prisma.source.findUnique({ where: { id: sourceConfig.id } });
+    const dbSource = await prisma.source.findUnique({ where: { id: sourceConfig.id } });
     if (!dbSource) {
-      dbSource = await prisma.source.create({
+      await prisma.source.create({
         data: {
           id: sourceConfig.id,
           name: sourceConfig.name,
@@ -41,7 +50,8 @@ export async function collectAllNews(): Promise<CollectionSummary> {
           country: sourceConfig.country,
           language: sourceConfig.language,
           priority: sourceConfig.priority,
-        }
+          enabled: sourceConfig.enabled,
+        },
       });
     }
 
@@ -63,26 +73,23 @@ export async function collectAllNews(): Promise<CollectionSummary> {
         const normUrl = normalizeUrl(item.originalUrl);
         const contentHash = generateContentHash(item.title, sourceConfig.id);
         const categoryName = classifyCategory(item.title, sourceConfig.defaultCategory);
-        
+
         // Find or create category
         let dbCategory = await prisma.category.findUnique({ where: { slug: categoryName } });
         if (!dbCategory) {
           dbCategory = await prisma.category.create({
             data: {
               name: categoryName.charAt(0).toUpperCase() + categoryName.slice(1),
-              slug: categoryName
-            }
+              slug: categoryName,
+            },
           });
         }
 
         // Check for duplicates
         const existingItem = await prisma.newsItem.findFirst({
           where: {
-            OR: [
-              { normalizedUrl: normUrl },
-              { contentHash: contentHash }
-            ]
-          }
+            OR: [{ normalizedUrl: normUrl }, { contentHash: contentHash }],
+          },
         });
 
         if (existingItem) {
@@ -91,26 +98,32 @@ export async function collectAllNews(): Promise<CollectionSummary> {
           continue;
         }
 
-        // Insert new item
-        await prisma.newsItem.create({
-          data: {
-            sourceId: sourceConfig.id,
-            externalId: item.externalId,
-            title: item.title,
-            description: item.description,
-            originalUrl: item.originalUrl,
-            normalizedUrl: normUrl,
-            author: item.author,
-            publishedAt: item.publishedAt,
-            imageUrl: item.imageUrl,
-            categoryId: dbCategory.id,
-            contentHash: contentHash,
-            status: 'DISCOVERED'
-          }
-        });
-        
-        newItems++;
-        summary.newItems++;
+        // Insert new item safely
+        try {
+          await prisma.newsItem.create({
+            data: {
+              sourceId: sourceConfig.id,
+              externalId: item.externalId,
+              title: item.title,
+              description: item.description,
+              originalUrl: item.originalUrl,
+              normalizedUrl: normUrl,
+              author: item.author,
+              publishedAt: item.publishedAt,
+              imageUrl: item.imageUrl,
+              categoryId: dbCategory.id,
+              contentHash: contentHash,
+              status: 'DISCOVERED',
+            },
+          });
+
+          newItems++;
+          summary.newItems++;
+        } catch {
+          // If race condition on unique constraint occurs, treat as duplicate
+          duplicates++;
+          summary.duplicates++;
+        }
       }
 
       // Update source health on success
@@ -118,40 +131,55 @@ export async function collectAllNews(): Promise<CollectionSummary> {
         where: { id: sourceConfig.id },
         data: {
           lastFetch: new Date(),
-          lastError: null
-        }
+          lastSuccessfulFetch: new Date(),
+          lastError: null,
+          consecutiveFailures: 0,
+        },
       });
-      
+
       summary.successfulSources++;
       console.log(`[NEWS] Source ${sourceConfig.name} success: ${newItems} new, ${duplicates} duplicates.`);
-      
     } catch (error: unknown) {
       summary.failedSources++;
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error(`[NEWS] Source ${sourceConfig.name} failed: ${errorMessage}`);
-      
+
+      sourceErrors.push({
+        sourceId: sourceConfig.id,
+        sourceName: sourceConfig.name,
+        error: errorMessage,
+      });
+
       // Update source health on error
       await prisma.source.update({
         where: { id: sourceConfig.id },
         data: {
-          lastError: errorMessage
-        }
+          lastFetch: new Date(),
+          lastError: errorMessage,
+          consecutiveFailures: {
+            increment: 1,
+          },
+        },
       });
     }
 
     // Save fetch log
-    await prisma.fetchLog.create({
-      data: {
-        sourceId: sourceConfig.id,
-        startedAt,
-        completedAt: new Date(),
-        status: errorMessage ? 'ERROR' : 'SUCCESS',
-        itemsFound,
-        newItems,
-        duplicates,
-        errorMessage
-      }
-    });
+    try {
+      await prisma.fetchLog.create({
+        data: {
+          sourceId: sourceConfig.id,
+          startedAt,
+          completedAt: new Date(),
+          status: errorMessage ? 'ERROR' : 'SUCCESS',
+          itemsFound,
+          newItems,
+          duplicates,
+          errorMessage,
+        },
+      });
+    } catch (logErr) {
+      console.error('[NEWS] Failed to write FetchLog:', logErr);
+    }
   }
 
   return summary;

@@ -1,23 +1,32 @@
 import { NextResponse } from 'next/server';
-import { collectAllNews } from '@/lib/news/collector';
+import { runNewsCollectionJob } from '@/lib/news/jobRunner';
 import { getAdminSession, recordActivity } from '@/lib/auth';
 
 export async function POST() {
   try {
     const session = await getAdminSession();
-    const summary = await collectAllNews();
+    const result = await runNewsCollectionJob({ trigger: 'manual' });
+
+    if (result.skipped) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        message: 'A news collection job is already running in the background.',
+        data: result,
+      });
+    }
 
     await recordActivity(
       'news_collected',
-      'rss_pipeline',
-      `Manual collection triggered: ${summary.newItems} new items, ${summary.duplicates} duplicates from ${summary.sourcesProcessed} sources.`,
+      'manual_pipeline',
+      `Manual news collection: ${result.newItems} new items, ${result.duplicates} duplicates from ${result.sourcesProcessed} sources.`,
       session.user || 'Admin'
     );
 
     return NextResponse.json({
-      success: true,
+      success: result.success,
       message: 'News collection completed successfully',
-      data: summary,
+      data: result,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Internal Server Error';

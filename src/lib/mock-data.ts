@@ -795,7 +795,7 @@ While the mineralogical evidence is compelling, scientists caution that liquid w
     category: categories[5],
     publishedAt: '2026-08-29T20:00:00Z',
     featuredImage:
-      'https://images.unsplash.com/photo-1614728263952-84ea256f9d4d?w=1200&h=675&fit=crop',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&h=675&fit=crop',
     imageAlt: 'Mars surface panoramic view from NASA Perseverance rover',
     tags: ['NASA', 'Mars', 'Space', 'Water', 'Science'],
     readingTime: 4,
@@ -922,7 +922,7 @@ India becomes only the second team in history to win back-to-back T20 World Cups
     category: categories[1],
     publishedAt: '2026-08-31T00:30:00Z',
     featuredImage:
-      'https://images.unsplash.com/photo-1540747913346-19378d0b2a03?w=1200&h=675&fit=crop',
+      'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=1200&h=675&fit=crop',
     imageAlt: 'Cricket team celebrating victory with trophy',
     tags: ['Cricket', 'India', 'T20 World Cup', 'Sports', 'BCCI'],
     readingTime: 3,

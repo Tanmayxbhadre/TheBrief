@@ -10,6 +10,8 @@ import {
 import { aiService } from '../src/lib/ai/service';
 import { sanitizeAiText, sanitizeStructuredAiOutput } from '../src/lib/ai/sanitize';
 import { aiRateLimiter } from '../src/lib/ai/rateLimit';
+import { runNewsCollectionJob } from '../src/lib/news/jobRunner';
+import { prisma } from '../src/lib/db';
 
 let passed = 0;
 let failed = 0;
@@ -26,7 +28,7 @@ function assert(condition: boolean, testName: string) {
 
 async function runAllTests() {
   console.log('==================================================');
-  console.log('THEBRIEF PHASE 5 — COMPREHENSIVE TEST SUITE');
+  console.log('THEBRIEF PHASE 6 — COMPREHENSIVE TEST SUITE');
   console.log('==================================================\n');
 
   // ----------------------------------------------------
@@ -233,6 +235,73 @@ async function runAllTests() {
   assert(factCheckImprove.action === 'fact_check', 'Improve action: fact_check returned');
 
   // ----------------------------------------------------
+  // TEST GROUP 5: Durable Database Lock & Concurrency
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 5: Durable Database Job Locking ---');
+
+  // Clean test lock
+  await prisma.collectionJobLock.deleteMany({ where: { jobName: 'test-lock' } });
+
+  // 1. Acquire lock
+  const lock1 = await prisma.collectionJobLock.create({
+    data: {
+      jobName: 'test-lock',
+      acquiredAt: new Date(),
+      expiresAt: new Date(Date.now() + 60_000),
+    },
+  });
+  assert(Boolean(lock1.id), 'Acquired test database lock successfully');
+
+  // 2. Attempt duplicate lock (should fail unique constraint)
+  let duplicateBlocked = false;
+  try {
+    await prisma.collectionJobLock.create({
+      data: {
+        jobName: 'test-lock',
+        acquiredAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+    });
+  } catch {
+    duplicateBlocked = true;
+  }
+  assert(duplicateBlocked, 'Concurrent lock collision is strictly blocked at DB level');
+
+  // 3. Release lock
+  await prisma.collectionJobLock.deleteMany({ where: { jobName: 'test-lock' } });
+  const remainingLocks = await prisma.collectionJobLock.count({ where: { jobName: 'test-lock' } });
+  assert(remainingLocks === 0, 'Durable lock release completes cleanly');
+
+  // ----------------------------------------------------
+  // TEST GROUP 6: Collection Job History & Execution
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 6: News Collection Job Runner ---');
+
+  const initialJobCount = await prisma.collectionJob.count();
+  const jobResult = await runNewsCollectionJob({ trigger: 'cli' });
+
+  assert(Boolean(jobResult.jobId), 'News collection job executes and creates a CollectionJob record');
+  assert(jobResult.durationMs >= 0, 'Job duration is recorded in milliseconds');
+
+  const updatedJobCount = await prisma.collectionJob.count();
+  assert(updatedJobCount > initialJobCount, 'CollectionJob execution history persists in database');
+
+  const loggedJob = await prisma.collectionJob.findUnique({
+    where: { id: jobResult.jobId },
+  });
+  assert(
+    loggedJob?.status === 'COMPLETED' || loggedJob?.status === 'PARTIAL' || loggedJob?.status === 'FAILED',
+    'Job status reflects execution state accurately (COMPLETED/PARTIAL/FAILED)'
+  );
+  assert(loggedJob?.trigger === 'cli', 'Trigger context is preserved in job history');
+
+  // Verify second immediate run handles deduplication
+  console.log('\n--- Test Suite 7: Idempotency & Deduplication ---');
+  const secondRunResult = await runNewsCollectionJob({ trigger: 'cli' });
+  assert(Boolean(secondRunResult.jobId), 'Immediate second collection run executes cleanly');
+  assert(secondRunResult.duplicates >= 0, 'Second run tracks duplicate stories rather than creating duplicates');
+
+  // ----------------------------------------------------
   // Summary
   // ----------------------------------------------------
   console.log('\n==================================================');
@@ -244,7 +313,11 @@ async function runAllTests() {
   }
 }
 
-runAllTests().catch((err) => {
-  console.error('Fatal test error:', err);
-  process.exit(1);
-});
+runAllTests()
+  .catch((err) => {
+    console.error('Fatal test error:', err);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

@@ -1,0 +1,40 @@
+name: Automatic News Collector
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  collect:
+    name: Trigger News Collection Cron
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Cron Webhook
+        run: |
+          if [ -z "${{ secrets.CRON_SECRET }}" ]; then
+            echo "Error: CRON_SECRET repository secret is missing."
+            exit 1
+          fi
+          
+          SITE_URL="${{ secrets.SITE_URL }}"
+          if [ -z "$SITE_URL" ]; then
+            SITE_URL="https://thebrief.in"
+          fi
+          
+          echo "Triggering $SITE_URL/api/cron/news..."
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "$SITE_URL/api/cron/news" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+          
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
+          BODY=$(echo "$RESPONSE" | grep -v "HTTP_STATUS")
+          
+          echo "Response Status: $HTTP_STATUS"
+          echo "Response Body: $BODY"
+          
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Collection failed with status $HTTP_STATUS"
+            exit 1
+          fi
