@@ -15,10 +15,11 @@
 
 .title {
   font-family: var(--font-serif);
-  font-size: var(--text-5xl);
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 400;
   color: var(--color-text);
   margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
 }
 
 .date {
@@ -38,12 +39,13 @@
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-accent);
   border-radius: 20px;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
 }
 
 .dateNavLink:hover {
   background: var(--color-accent);
   color: #fff;
+  transform: translateY(-1px);
 }
 
 /* ── Section ── */
@@ -67,6 +69,7 @@
   gap: var(--space-6);
   padding: var(--space-5) 0;
   border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--transition-fast);
 }
 
 .storyTime {
@@ -87,7 +90,7 @@
 
 .storyHeadline {
   font-family: var(--font-serif);
-  font-size: var(--text-2xl);
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
   line-height: var(--leading-snug);
   font-weight: 400;
 }
@@ -170,26 +173,52 @@
 }
 
 @media (max-width: 767px) {
-  .topStory {
-    grid-template-columns: 60px 1fr;
-    gap: var(--space-4);
-  }
-
-  .storyHeadline {
-    font-size: var(--text-xl);
+  .page {
+    padding: var(--space-6) 0 var(--space-12);
   }
 
   .categoryGrid {
     grid-template-columns: 1fr;
-  }
-
-  .title {
-    font-size: var(--text-3xl);
+    gap: var(--space-4);
   }
 
   .pageHeader {
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-4);
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+  }
+}
+
+@media (max-width: 640px) {
+  .topStory {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-4) 0;
+  }
+
+  .storyTime {
+    padding-top: 0;
+  }
+
+  .time {
+    display: inline-flex;
+    align-items: center;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    width: fit-content;
+  }
+
+  .storyHeadline {
+    font-size: 1.25rem;
+    line-height: 1.35;
+  }
+
+  .storyDesc {
+    font-size: var(--text-sm);
   }
 }

@@ -94,7 +94,7 @@ export default function Header() {
               <Search size={18} strokeWidth={1.75} />
             </Link>
             <button
-              className={styles.iconBtn}
+              className={`${styles.iconBtn} ${styles.menuToggleBtn}`}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"

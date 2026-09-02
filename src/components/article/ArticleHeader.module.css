@@ -113,13 +113,31 @@
 }
 
 @media (max-width: 767px) {
+  .header {
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-5);
+  }
+
   .headline {
     max-width: 100%;
+    font-size: clamp(1.75rem, 7vw, 2.35rem);
+    margin-bottom: var(--space-3);
+  }
+
+  .description {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin-bottom: var(--space-4);
   }
 
   .byline {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-2);
+    padding-bottom: var(--space-4);
+  }
+
+  .heroImageWrapper {
+    margin: var(--space-5) auto;
   }
 }

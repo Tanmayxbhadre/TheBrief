@@ -96,6 +96,7 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -106,6 +107,9 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
   min-height: 100dvh;
 }
 
@@ -172,11 +176,23 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+@media (max-width: 380px) {
+  .container {
+    padding-inline: var(--space-3);
+  }
+}
+
 .article-container {
   width: 100%;
   max-width: var(--container-article);
   margin-inline: auto;
   padding-inline: var(--space-6);
+}
+
+@media (max-width: 767px) {
+  .article-container {
+    padding-inline: var(--space-4);
+  }
 }
 
 /* ─── Typography Helpers ──────────────────────────────────── */
