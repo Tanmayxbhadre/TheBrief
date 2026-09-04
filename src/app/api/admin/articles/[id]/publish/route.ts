@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAdminSession, recordActivity } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
+import { revalidateNewsPublication } from '@/lib/cache/revalidateNews';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -73,17 +73,11 @@ export async function POST(request: Request, { params }: RouteParams) {
       });
     }
 
-    // Revalidate Next.js cache
-    try {
-      revalidatePath('/');
-      revalidatePath('/daily-news');
-      if (publishedArticle.category?.slug) {
-        revalidatePath(`/${publishedArticle.category.slug}`);
-        revalidatePath(`/${publishedArticle.category.slug}/${publishedArticle.slug}`);
-      }
-    } catch (revalidateErr) {
-      console.warn('Revalidation notice:', revalidateErr);
-    }
+    // Centralized cache revalidation
+    await revalidateNewsPublication({
+      categorySlug: publishedArticle.category?.slug,
+      slug: publishedArticle.slug,
+    });
 
     await recordActivity(
       'article_published',

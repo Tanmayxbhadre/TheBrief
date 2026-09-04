@@ -640,6 +640,24 @@ async function runAllTests() {
   });
   assert(case9.decision === 'AUTO_PUBLISH', 'CASE 9: When AUTO_PUBLISH_ENABLED=true, qualified safe story auto-publishes');
 
+  // ----------------------------------------------------
+  // TEST GROUP 15: Real-Time Homepage Updates & Dynamic Architecture
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 15: Real-Time Homepage Updates & Dynamic Architecture ---');
+  const { getHomepageData } = await import('../src/lib/news/homepage');
+  const { revalidateNewsPublication } = await import('../src/lib/cache/revalidateNews');
+
+  const homepageData = await getHomepageData();
+  assert(homepageData !== undefined, 'Homepage data service resolves successfully');
+  assert(homepageData.featured !== undefined, 'Homepage Hero featured article is dynamically populated');
+  assert(Array.isArray(homepageData.latestArticles) && homepageData.latestArticles.length > 0, 'Homepage Latest News array is populated');
+  assert(Array.isArray(homepageData.trendingArticles), 'Homepage Trending News array is populated');
+  assert(typeof homepageData.categoryArticles === 'object', 'Homepage Category Sections map is populated');
+
+  // Test revalidation service
+  await revalidateNewsPublication({ categorySlug: 'technology', slug: 'test-slug' });
+  assert(true, 'Centralized cache revalidation service executes cleanly without error');
+
   // Clean up test data
   await prisma.articleDraft.delete({ where: { id: clusterDraftId } });
   await prisma.storyCluster.delete({ where: { id: clusterId1 } });

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAdminSession, recordActivity } from '@/lib/auth';
-import { revalidatePath } from 'next/cache';
+import { revalidateNewsPublication } from '@/lib/cache/revalidateNews';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,13 +22,10 @@ export async function POST(request: Request, { params }: RouteParams) {
       include: { category: true },
     });
 
-    try {
-      revalidatePath('/');
-      revalidatePath('/daily-news');
-      if (updated.category?.slug) {
-        revalidatePath(`/${updated.category.slug}`);
-      }
-    } catch {}
+    await revalidateNewsPublication({
+      categorySlug: updated.category?.slug,
+      slug: updated.slug,
+    });
 
     await recordActivity(
       `article_${targetStatus.toLowerCase()}`,

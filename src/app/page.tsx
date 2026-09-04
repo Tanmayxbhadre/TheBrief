@@ -5,14 +5,10 @@ import LatestNewsFeed from '@/components/home/LatestNewsFeed';
 import CategorySection from '@/components/home/CategorySection';
 import TrendingSection from '@/components/home/TrendingSection';
 import NewsletterSignup from '@/components/home/NewsletterSignup';
+import LiveNewsRefresher from '@/components/home/LiveNewsRefresher';
 import AdSlot from '@/components/shared/AdSlot';
 
-import {
-  getAllPublishedArticles,
-  getLatestPublishedArticles,
-  getPublishedArticlesByCategory,
-  getDynamicBreakingNews,
-} from '@/lib/articles';
+import { getHomepageData } from '@/lib/news/homepage';
 import styles from './page.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -28,27 +24,39 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const allArticles = await getAllPublishedArticles();
-  const featured = allArticles.find((a) => a.featured) || allArticles[0];
-  const secondary = allArticles.filter((a) => a.id !== featured.id && a.featured).slice(0, 3);
-  const latestArticles = await getLatestPublishedArticles(8);
-  const trendingArticles = allArticles.slice(0, 5);
-  const breakingItem = await getDynamicBreakingNews();
+  const {
+    breakingItem,
+    featured,
+    secondary,
+    latestArticles,
+    trendingArticles,
+    categoryArticles,
+    latestPublishedAt,
+    latestArticleId,
+  } = await getHomepageData();
 
-  const techArticles = await getPublishedArticlesByCategory('technology', 4);
-  const indiaArticles = await getPublishedArticlesByCategory('india', 4);
-  const aiArticles = await getPublishedArticlesByCategory('ai', 4);
-  const businessArticles = await getPublishedArticlesByCategory('business', 4);
-  const scienceArticles = await getPublishedArticlesByCategory('science', 4);
-  const gamingArticles = await getPublishedArticlesByCategory('gaming', 4);
-  const entertainmentArticles = await getPublishedArticlesByCategory('entertainment', 4);
+  const techArticles = categoryArticles['technology'] || [];
+  const indiaArticles = categoryArticles['india'] || [];
+  const worldArticles = categoryArticles['world'] || [];
+  const aiArticles = categoryArticles['ai'] || [];
+  const businessArticles = categoryArticles['business'] || [];
+  const scienceArticles = categoryArticles['science'] || [];
+  const startupsArticles = categoryArticles['startups'] || [];
+  const gamingArticles = categoryArticles['gaming'] || [];
+  const entertainmentArticles = categoryArticles['entertainment'] || [];
 
   return (
     <>
-      {/* Breaking News Bar */}
+      {/* Client-Side Live News Refresher (Checks for new publications every 60s & on tab focus) */}
+      <LiveNewsRefresher
+        initialLatestPublishedAt={latestPublishedAt}
+        initialLatestArticleId={latestArticleId}
+      />
+
+      {/* Dynamic Breaking News Bar */}
       {breakingItem && <BreakingNewsBar item={breakingItem} />}
 
-      {/* Hero */}
+      {/* Hero Section */}
       <section aria-label="Today's top stories">
         <HeroSection featured={featured} secondary={secondary} />
       </section>
@@ -91,6 +99,14 @@ export default async function HomePage() {
           />
         )}
 
+        {worldArticles.length > 0 && (
+          <CategorySection
+            categoryName="World"
+            categorySlug="world"
+            articles={worldArticles}
+          />
+        )}
+
         {aiArticles.length > 0 && (
           <CategorySection
             categoryName="Artificial Intelligence"
@@ -112,6 +128,14 @@ export default async function HomePage() {
             categoryName="Science"
             categorySlug="science"
             articles={scienceArticles}
+          />
+        )}
+
+        {startupsArticles.length > 0 && (
+          <CategorySection
+            categoryName="Startups & Venture"
+            categorySlug="startups"
+            articles={startupsArticles}
           />
         )}
 

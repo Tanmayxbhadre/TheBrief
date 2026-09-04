@@ -2,6 +2,7 @@ import { prisma } from '../db';
 import { aiService } from './service';
 import { GenerateDraftRequest, StructuredArticleDraft } from './types';
 import { SOURCES } from '../news/sourceRegistry';
+import { revalidateNewsPublication } from '../cache/revalidateNews';
 
 export interface QualityEvaluationResult {
   qualityScore: number;
@@ -423,6 +424,14 @@ export async function generateDraftForCluster(
       details: `Generated from Cluster #${cluster.id.slice(0, 8)} (${cluster.items.length} sources). Quality: ${qualityScore}%, Confidence: ${evaluation.publishConfidence}%. Action: ${evaluation.action}`,
     },
   });
+
+  // Trigger cache revalidation if auto-published
+  if (shouldAutoPublish) {
+    await revalidateNewsPublication({
+      categorySlug: cluster.category?.slug,
+      slug: createdDraft.slug,
+    });
+  }
 
   return createdDraft.id;
 }
