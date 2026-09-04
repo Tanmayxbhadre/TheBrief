@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     await setAdminSessionCookie(user);
     await recordActivity('user_logged_in', 'admin_session', `User ${user} logged into newsroom`, user);
 
+    return NextResponse.json({ success: true, user });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Login failed';
     return NextResponse.json({ error: message }, { status: 500 });
