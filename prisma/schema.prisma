@@ -39,8 +39,32 @@ model Category {
   sources        Source[]
   items          NewsItem[]
   drafts         ArticleDraft[]
+  clusters       StoryCluster[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+}
+
+model StoryCluster {
+  id              String         @id @default(uuid())
+  title           String         // Representative headline of the cluster
+  slug            String         @unique
+  summary         String?        // Aggregated summary of the underlying event
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  status          String         @default("PENDING") // PENDING, ACTIVE, DRAFTED, PUBLISHED, ARCHIVED
+  sourceCount     Int            @default(1)
+  confidenceScore Float          @default(1.0)
+  leadImageUrl    String?
+  items           NewsItem[]
+  drafts          ArticleDraft[]
+  firstSeenAt     DateTime       @default(now())
+  lastSeenAt      DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([lastSeenAt])
 }
 
 model NewsItem {
@@ -59,6 +83,8 @@ model NewsItem {
   imageAlt      String?
   categoryId    String?
   category      Category?      @relation(fields: [categoryId], references: [id])
+  clusterId     String?
+  cluster       StoryCluster?  @relation(fields: [clusterId], references: [id], onDelete: SetNull)
   status        String         @default("DISCOVERED") // DISCOVERED, REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
   contentHash   String         @unique
   internalNotes String?
@@ -70,49 +96,53 @@ model NewsItem {
   @@index([publishedAt])
   @@index([sourceId])
   @@index([categoryId])
+  @@index([clusterId])
   @@index([status])
 }
 
 model ArticleDraft {
-  id               String    @id @default(uuid())
+  id               String        @id @default(uuid())
   newsItemId       String?
-  newsItem         NewsItem? @relation(fields: [newsItemId], references: [id], onDelete: SetNull)
+  newsItem         NewsItem?     @relation(fields: [newsItemId], references: [id], onDelete: SetNull)
+  clusterId        String?
+  cluster          StoryCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
   title            String
-  slug             String    @unique
+  slug             String        @unique
   excerpt          String
   content          String
   categoryId       String?
-  category         Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  authorName       String    @default("THE BRIEF Editorial Team")
+  category         Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorName       String        @default("THE BRIEF Editorial Team")
   authorId         String?
   featuredImage    String?
   imageAlt         String?
-  status           String    @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
+  status           String        @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
   seoTitle         String?
   metaDescription  String?
   canonicalUrl     String?
-  tags             String?   // JSON string of string[]
-  sources          String?   // JSON string of { name: string, url: string }[]
-  quickSummary     String?   // JSON string of string[]
-  whatYouNeedToKnow String?  // JSON string of { whatHappened, whyItMatters, keyDetails, whatsNext }
-  timeline         String?   // JSON string of { date, title, description }[]
+  tags             String?       // JSON string of string[]
+  sources          String?       // JSON string of { name: string, url: string }[]
+  quickSummary     String?       // JSON string of string[]
+  whatYouNeedToKnow String?      // JSON string of { whatHappened, whyItMatters, keyDetails, whatsNext }
+  timeline         String?       // JSON string of { date, title, description }[]
   internalNotes    String?
-  readingTime      Int       @default(3)
-  featured         Boolean   @default(false)
-  breaking         Boolean   @default(false)
-  aiGenerated      Boolean   @default(false)
+  readingTime      Int           @default(3)
+  featured         Boolean       @default(false)
+  breaking         Boolean       @default(false)
+  aiGenerated      Boolean       @default(false)
   aiProvider       String?
   aiModel          String?
-  aiFlags          String?   // JSON string of { needsVerification: boolean, verificationNotes: string[] }
+  aiFlags          String?       // JSON string of { needsVerification: boolean, verificationNotes: string[] }
   generationLogs   AIGenerationLog[]
   publishedAt      DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@index([status])
   @@index([slug])
   @@index([publishedAt])
   @@index([categoryId])
+  @@index([clusterId])
 }
 
 model AIGenerationLog {
