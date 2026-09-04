@@ -38,6 +38,7 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
   const [status, setStatus] = useState('all');
+  const [filter, setFilter] = useState('all'); // all | needs_review | high_quality | low_confidence | sensitive | breaking | recently_created
   const [creating, setCreating] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -49,6 +50,7 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
       if (search) params.set('search', search);
       if (category !== 'all') params.set('category', category);
       if (status !== 'all') params.set('status', status);
+      if (filter !== 'all') params.set('filter', filter);
 
       const res = await fetch(`/api/admin/drafts?${params.toString()}`);
       const data = await res.json();
@@ -60,7 +62,7 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
     } finally {
       setLoading(false);
     }
-  }, [search, category, status]);
+  }, [search, category, status, filter]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -182,6 +184,38 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Quick Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+        {[
+          { id: 'all', label: 'All Drafts' },
+          { id: 'needs_review', label: '⚠️ Needs Review' },
+          { id: 'high_quality', label: '⭐ High Quality (≥90)' },
+          { id: 'low_confidence', label: '🔍 Low Confidence (<90)' },
+          { id: 'sensitive', label: '🛡️ Sensitive' },
+          { id: 'breaking', label: '🚨 Breaking' },
+          { id: 'recently_created', label: '⏱️ Recently Created' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setFilter(tab.id)}
+            style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: '20px',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: filter === tab.id ? '1px solid #1a3a8b' : '1px solid #e2e8f0',
+              backgroundColor: filter === tab.id ? '#1a3a8b' : '#ffffff',
+              color: filter === tab.id ? '#ffffff' : '#475569',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Drafts Table */}

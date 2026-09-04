@@ -27,6 +27,7 @@ export default async function AdminDashboardPage() {
     publishedTodayCount,
     totalSourcesCount,
     errorSourcesCount,
+    pendingDrafts,
     recentStories,
     recentActivity,
   ] = await Promise.all([
@@ -44,6 +45,15 @@ export default async function AdminDashboardPage() {
     }),
     prisma.source.count(),
     prisma.source.count({ where: { lastError: { not: null }, enabled: true } }),
+    prisma.articleDraft.findMany({
+      where: { status: { in: ['DRAFT', 'REVIEW'] } },
+      include: {
+        category: true,
+        cluster: { include: { items: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 6,
+    }),
     prisma.newsItem.findMany({
       where: { status: { in: ['DISCOVERED', 'REVIEW'] } },
       include: { source: true, category: true },
@@ -116,6 +126,94 @@ export default async function AdminDashboardPage() {
               'All channels healthy'
             )}
           </span>
+        </div>
+      </div>
+
+      {/* AI Drafts / Needs Review Section */}
+      <div className={styles.panel} style={{ border: '1px solid #fed7aa', backgroundColor: '#fffbeb' }}>
+        <div className={styles.panelHeader} style={{ backgroundColor: '#fff7ed', borderBottom: '1px solid #fed7aa' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <span style={{ fontSize: '1.1rem' }}>⚡</span>
+            <h2 className={styles.panelTitle} style={{ color: '#9a3412', fontWeight: 700 }}>
+              AI DRAFTS / NEEDS REVIEW ({draftsCount})
+            </h2>
+          </div>
+          <Link href="/admin/drafts" className={styles.panelLink} style={{ color: '#c2410c', fontWeight: 600 }}>
+            View All Drafts →
+          </Link>
+        </div>
+
+        <div className={styles.list}>
+          {pendingDrafts.length === 0 ? (
+            <div className={styles.emptyState} style={{ color: '#7c2d12' }}>
+              No pending drafts awaiting review. High-confidence safe stories auto-publish automatically.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem', padding: '1rem' }}>
+              {pendingDrafts.map((draft) => {
+                let reason = 'Requires editorial verification';
+                let sourceCount = draft.cluster?.items.length || 1;
+                try {
+                  if (draft.internalNotes) {
+                    const parsed = JSON.parse(draft.internalNotes);
+                    reason = parsed.decisionReason || (parsed.notes && parsed.notes[0]) || reason;
+                    if (parsed.sourceCount) sourceCount = parsed.sourceCount;
+                  }
+                } catch {
+                  if (draft.internalNotes) reason = draft.internalNotes;
+                }
+
+                return (
+                  <div
+                    key={draft.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #fde68a',
+                      borderRadius: 8,
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: '#b45309', background: '#fef3c7', padding: '0.2rem 0.5rem', borderRadius: 4 }}>
+                          {draft.category?.name || 'General'}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: '#78716c' }}>
+                          {formatRelativeTime(draft.createdAt.toISOString())}
+                        </span>
+                      </div>
+
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1c1917', lineHeight: 1.35, marginBottom: '0.75rem' }}>
+                        {draft.title}
+                      </h3>
+
+                      <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', marginBottom: '0.75rem', background: '#f8fafc', padding: '0.4rem 0.6rem', borderRadius: 6 }}>
+                        <span>Confidence: <strong>{draft.publishConfidence ?? 85}%</strong></span>
+                        <span>Quality: <strong>{draft.aiQualityScore ?? 90}%</strong></span>
+                        <span>Sources: <strong>{sourceCount}</strong></span>
+                      </div>
+
+                      <div style={{ fontSize: '0.75rem', color: '#b45309', background: '#fffbeb', padding: '0.4rem 0.6rem', borderRadius: 6, marginBottom: '1rem', borderLeft: '3px solid #f59e0b' }}>
+                        <strong>Reason:</strong> {reason}
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/admin/drafts/${draft.id}`}
+                      className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+                      style={{ textAlign: 'center', display: 'block', padding: '0.5rem' }}
+                    >
+                      Review Draft →
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

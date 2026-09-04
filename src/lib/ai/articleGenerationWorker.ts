@@ -7,12 +7,41 @@ export interface QualityEvaluationResult {
   qualityScore: number;
   publishConfidence: number;
   action: 'AUTO_PUBLISH' | 'ADMIN_QUICK_REVIEW' | 'FULL_EDITORIAL_REVIEW' | 'HOLD';
+  decision: 'AUTO_PUBLISH' | 'HUMAN_REVIEW';
+  decisionReason: string;
   notes: string[];
+  isSensitive: boolean;
 }
 
-const SENSITIVE_CATEGORIES = new Set([
-  'politics', 'legal', 'crime', 'emergency', 'defense', 'military',
+export const SENSITIVE_CATEGORIES = new Set([
+  'politics',
+  'legal',
+  'crime',
+  'emergency',
+  'defense',
+  'military',
+  'elections',
+  'war',
+  'disasters',
+  'national-security',
 ]);
+
+export const SENSITIVE_KEYWORD_PATTERNS = [
+  /\b(election|elections|ballot|voting|poll|politician|parliament|congress|minister|president|prime minister)\b/i,
+  /\b(war|warfare|missile|airstrike|bombing|invasion|troops|military strike|ceasefire)\b/i,
+  /\b(terror|terrorist|terrorism|hostage|hijack|extremist)\b/i,
+  /\b(killed|dead|deaths|fatality|casualties|suicide|murder|homicide|mass shooting|assassination|slain)\b/i,
+  /\b(arrest|arrested|indictment|indicted|charged with|allegation|lawsuit|prosecutor|convicted|guilty of)\b/i,
+  /\b(health emergency|outbreak|epidemic|pandemic|contagion|virus outbreak)\b/i,
+  /\b(financial crisis|bank run|bankruptcy|debt default|market collapse|fraud scheme)\b/i,
+];
+
+export function isSensitiveContent(text: string, category: string): boolean {
+  if (SENSITIVE_CATEGORIES.has(category.toLowerCase())) {
+    return true;
+  }
+  return SENSITIVE_KEYWORD_PATTERNS.some((pattern) => pattern.test(text));
+}
 
 /**
  * Evaluates the quality of a generated structured article draft (0–100)
@@ -105,9 +134,21 @@ export function calculatePublishConfidence(options: {
   sourceReliability: number;
   sourceCount: number;
   category: string;
+  title?: string;
+  content?: string;
+  hasFactCheckFlag?: boolean;
   isBreaking?: boolean;
 }): QualityEvaluationResult {
-  const { aiQualityScore, sourceReliability, sourceCount, category, isBreaking } = options;
+  const {
+    aiQualityScore,
+    sourceReliability,
+    sourceCount,
+    category,
+    title = '',
+    content = '',
+    hasFactCheckFlag = false,
+    isBreaking = false,
+  } = options;
   const notes: string[] = [];
 
   // Weighted confidence calculation:
@@ -128,37 +169,77 @@ export function calculatePublishConfidence(options: {
 
   const publishConfidence = Math.min(100, Math.max(0, Math.round(rawConfidence)));
 
-  // Safety rules
-  const isHighRiskCategory = SENSITIVE_CATEGORIES.has(category.toLowerCase());
+  // Safety & Threshold rules
+  const combinedText = `${title} ${content}`;
+  const isSensitive = isSensitiveContent(combinedText, category);
   const autoPublishEnabled = process.env.AUTO_PUBLISH_ENABLED === 'true';
+  const minConfidence = parseInt(process.env.AUTO_PUBLISH_MIN_CONFIDENCE || '90', 10);
+  const minQuality = parseInt(process.env.AUTO_PUBLISH_MIN_QUALITY || '90', 10);
+
+  // Compile detailed failure reasons
+  const failureReasons: string[] = [];
+  if (!autoPublishEnabled) {
+    failureReasons.push('Auto-publishing is disabled in configuration');
+  }
+  if (isSensitive) {
+    failureReasons.push('Sensitive topic requires human review');
+  }
+  if (hasFactCheckFlag) {
+    failureReasons.push('Fact-check warning detected');
+  }
+  if (publishConfidence < minConfidence) {
+    failureReasons.push(`Confidence score below auto-publish threshold (${publishConfidence} < ${minConfidence})`);
+  }
+  if (aiQualityScore < minQuality) {
+    failureReasons.push(`Quality score below auto-publish threshold (${aiQualityScore} < ${minQuality})`);
+  }
+  if (sourceReliability < 88) {
+    failureReasons.push(`Source reliability below threshold (${sourceReliability} < 88)`);
+  }
+  if (sourceCount < 2) {
+    failureReasons.push(`Insufficient independent sources (${sourceCount} < 2)`);
+  }
 
   let action: 'AUTO_PUBLISH' | 'ADMIN_QUICK_REVIEW' | 'FULL_EDITORIAL_REVIEW' | 'HOLD';
+  let decision: 'AUTO_PUBLISH' | 'HUMAN_REVIEW' = 'HUMAN_REVIEW';
+  let decisionReason = '';
 
-  if (
+  const passesAllChecks =
     autoPublishEnabled &&
-    publishConfidence >= 90 &&
-    aiQualityScore >= 90 &&
+    !isSensitive &&
+    !hasFactCheckFlag &&
+    publishConfidence >= minConfidence &&
+    aiQualityScore >= minQuality &&
     sourceReliability >= 88 &&
-    !isHighRiskCategory
-  ) {
+    sourceCount >= 2;
+
+  if (passesAllChecks) {
     action = 'AUTO_PUBLISH';
-    notes.push('Passed all autonomous publishing safety checks');
-  } else if (publishConfidence >= 75) {
-    action = 'ADMIN_QUICK_REVIEW';
-    if (isHighRiskCategory) notes.push('High-risk category requires editorial sign-off');
-  } else if (publishConfidence >= 50) {
-    action = 'FULL_EDITORIAL_REVIEW';
-    notes.push('Moderate confidence: detailed editorial verification recommended');
+    decision = 'AUTO_PUBLISH';
+    decisionReason = 'High-confidence multi-source reporting with no critical warnings.';
+    notes.push(decisionReason);
   } else {
-    action = 'HOLD';
-    notes.push('Low confidence: draft held for editorial evaluation');
+    decision = 'HUMAN_REVIEW';
+    decisionReason = failureReasons[0] || 'Requires editorial verification before publishing.';
+    notes.push(...failureReasons);
+
+    if (publishConfidence >= 75) {
+      action = 'ADMIN_QUICK_REVIEW';
+    } else if (publishConfidence >= 50) {
+      action = 'FULL_EDITORIAL_REVIEW';
+    } else {
+      action = 'HOLD';
+    }
   }
 
   return {
     qualityScore: aiQualityScore,
     publishConfidence,
     action,
+    decision,
+    decisionReason,
     notes,
+    isSensitive,
   };
 }
 
@@ -244,10 +325,13 @@ export async function generateDraftForCluster(
     sourceReliability: avgReliability,
     sourceCount: cluster.items.length,
     category: cluster.category?.slug || 'technology',
+    title: draftData.title,
+    content: `${draftData.excerpt || ''} ${draftData.content || ''}`,
+    hasFactCheckFlag: !!draftData.reviewFlags?.needsVerification,
     isBreaking: cluster.isBreaking,
   });
 
-  const shouldAutoPublish = evaluation.action === 'AUTO_PUBLISH';
+  const shouldAutoPublish = evaluation.decision === 'AUTO_PUBLISH';
   const draftStatus = shouldAutoPublish ? 'PUBLISHED' : 'DRAFT';
 
   // Ensure unique slug
@@ -256,6 +340,17 @@ export async function generateDraftForCluster(
   if (existingSlug) {
     uniqueSlug = `${uniqueSlug}-${Date.now().toString().slice(-4)}`;
   }
+
+  const editorialMetadata = {
+    decision: evaluation.decision,
+    decisionReason: evaluation.decisionReason,
+    notes: evaluation.notes,
+    confidenceScore: evaluation.publishConfidence,
+    qualityScore: qualityScore,
+    sourceReliability: avgReliability,
+    sourceCount: cluster.items.length,
+    isSensitive: evaluation.isSensitive,
+  };
 
   // Create ArticleDraft
   const createdDraft = await prisma.articleDraft.create({
@@ -280,6 +375,7 @@ export async function generateDraftForCluster(
       quickSummary: JSON.stringify(draftData.quickSummary),
       whatYouNeedToKnow: draftData.whatYouNeedToKnow ? JSON.stringify(draftData.whatYouNeedToKnow) : null,
       timeline: draftData.timeline ? JSON.stringify(draftData.timeline) : null,
+      internalNotes: JSON.stringify(editorialMetadata),
       readingTime: draftData.readingTime || 3,
       breaking: cluster.isBreaking,
       aiGenerated: true,

@@ -9,6 +9,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const category = searchParams.get('category');
+    const filter = searchParams.get('filter'); // needs_review | high_quality | low_confidence | sensitive | breaking | recently_created
     const search = searchParams.get('search')?.trim();
 
     const where: Prisma.ArticleDraftWhereInput = {};
@@ -21,12 +22,38 @@ export async function GET(request: Request) {
       where.category = { slug: category };
     }
 
-    if (search) {
+    // Specialized Editorial Filters
+    if (filter === 'needs_review') {
+      where.status = { in: ['DRAFT', 'REVIEW'] };
+    } else if (filter === 'high_quality') {
+      where.aiQualityScore = { gte: 90 };
+    } else if (filter === 'low_confidence') {
+      where.publishConfidence = { lt: 90 };
+    } else if (filter === 'sensitive') {
       where.OR = [
-        { title: { contains: search } },
-        { excerpt: { contains: search } },
-        { authorName: { contains: search } },
+        { internalNotes: { contains: '"isSensitive":true' } },
+        { internalNotes: { contains: 'Sensitive topic' } },
+        { category: { slug: { in: ['politics', 'legal', 'crime', 'emergency', 'defense', 'military'] } } },
       ];
+    } else if (filter === 'breaking') {
+      where.breaking = true;
+    }
+
+    if (search) {
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: search } },
+            { excerpt: { contains: search } },
+            { authorName: { contains: search } },
+          ],
+        },
+      ];
+    }
+
+    let orderBy: Prisma.ArticleDraftOrderByWithRelationInput = { updatedAt: 'desc' };
+    if (filter === 'recently_created') {
+      orderBy = { createdAt: 'desc' };
     }
 
     const drafts = await prisma.articleDraft.findMany({
@@ -37,7 +64,7 @@ export async function GET(request: Request) {
           include: { source: true },
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy,
     });
 
     return NextResponse.json({ drafts });
