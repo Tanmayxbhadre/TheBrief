@@ -1,0 +1,68 @@
+.container {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0284c7;
+  border-radius: 8px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.icon {
+  color: #0284c7;
+}
+
+.heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #0369a1;
+}
+
+.description {
+  font-size: 0.875rem;
+  color: #334155;
+  margin-bottom: 0.625rem;
+  line-height: 1.4;
+}
+
+.sourcesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sourceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.sourceChip:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0284c7;
+  transform: translateY(-1px);
+}
+
+.arrow {
+  font-size: 0.75rem;
+  color: #64748b;
+}

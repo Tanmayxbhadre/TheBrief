@@ -6,10 +6,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Newspaper,
+  Layers,
   FileEdit,
   Globe,
   Radio,
   FolderTree,
+  BarChart3,
   Settings,
   LogOut,
   X,
@@ -25,6 +27,7 @@ interface AdminSidebarProps {
   counts?: {
     discovered?: number;
     drafts?: number;
+    clusters?: number;
   };
 }
 
@@ -45,8 +48,10 @@ export function AdminSidebar({ isOpen, onClose, user = 'Editor', counts }: Admin
   const navItems = [
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, exact: true },
     { label: 'News Queue', href: '/admin/news', icon: Newspaper, count: counts?.discovered },
+    { label: 'Story Clusters', href: '/admin/clusters', icon: Layers, count: counts?.clusters },
     { label: 'Drafts', href: '/admin/drafts', icon: FileEdit, count: counts?.drafts },
     { label: 'Published', href: '/admin/articles', icon: Globe },
+    { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { label: 'News Collection', href: '/admin/collection', icon: Activity },
     { label: 'Sources & Health', href: '/admin/sources', icon: Radio },
     { label: 'Categories', href: '/admin/categories', icon: FolderTree },

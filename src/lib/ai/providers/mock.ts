@@ -26,17 +26,22 @@ export class MockAIProvider extends BaseAIProvider {
     const slug = slugify(cleanTitle, { lower: true, strict: true, trim: true }) || 'editorial-draft';
     const isBreaking = req.mode === 'breaking';
 
+    const allSources = [req.primarySource, ...(req.additionalSources || [])];
+    const sourceNamesList = allSources.map((s) => s.name).join(' · ');
+
     const draft: StructuredArticleDraft = {
       title: cleanTitle,
       suggestedSlug: slug,
       excerpt: req.description
         ? `${req.description.slice(0, 140)}...`
-        : `Comprehensive editorial synthesis of the latest developments reported by ${req.primarySource.name}.`,
+        : `Comprehensive editorial synthesis of developments verified across ${allSources.length} reporting sources: ${sourceNamesList}.`,
       content: isBreaking
-        ? `## Breaking Development\n\n${req.description || 'Initial reports indicate significant developments underway.'}\n\n## What is Confirmed\n\n- Primary reporting originated from ${req.primarySource.name}.\n- Key stakeholders have been notified as details continue to unfold.\n\n## Developing Questions\n\nFurther technical and official confirmations are expected in subsequent updates.`
-        : `## What Happened\n\n${req.description || 'Major announcements were made today regarding key sector developments.'}\n\nAccording to reporting from **${req.primarySource.name}**, this move marks a strategic shift with wide-ranging implications.\n\n## Key Details & Context\n\nIndustry analysts note that this development addresses longstanding market demands. Further briefings highlighted operational milestones set to take effect over the coming quarter.\n\n## Why It Matters\n\nThe initiative reinforces strategic positioning while delivering tangible improvements for end users and ecosystem partners alike.\n\n## What's Next\n\nImplementation is slated to commence immediately, with initial phases rolling out across primary markets in the weeks ahead.`,
+        ? `## Breaking Development\n\n${req.description || 'Initial reports indicate significant developments underway.'}\n\n## Multi-Source Verification\n\n- Cross-verified across reporting from **${sourceNamesList}**.\n- Primary wire transmission confirmed by ${req.primarySource.name}.\n\n## Developing Questions\n\nFurther technical and official confirmations are expected in subsequent updates.`
+        : `## What Happened\n\n${req.description || 'Major announcements were made today regarding key sector developments.'}\n\nAccording to comprehensive reporting synthesized across **${sourceNamesList}**, this event marks a strategic shift with broad industry implications.\n\n## Key Details & Multi-Source Reporting\n\nMultiple independent outlets confirmed core milestones, with wire briefings highlighting operational rollouts scheduled over the coming quarter.\n\n## Why It Matters\n\nThe initiative reinforces strategic positioning while delivering verified improvements for the broader ecosystem.\n\n## What's Next\n\nImplementation is slated to commence immediately, with initial phases rolling out across primary markets in the weeks ahead.`,
       quickSummary: [
-        `${req.primarySource.name} reported significant updates on ${cleanTitle}.`,
+        allSources.length > 1
+          ? `Cross-verified across ${allSources.length} independent publications (${sourceNamesList}).`
+          : `${req.primarySource.name} reported updates on ${cleanTitle}.`,
         'Strategic implications expected to impact primary stakeholders and market momentum.',
         'Follow-up rollout scheduled across subsequent implementation milestones.',
       ],
@@ -44,7 +49,7 @@ export class MockAIProvider extends BaseAIProvider {
         whatHappened: `Official developments announced regarding ${cleanTitle}.`,
         whyItMatters: 'Signals crucial strategic realignment and enhanced capabilities for the ecosystem.',
         keyDetails: [
-          `Original reporting by ${req.primarySource.name}`,
+          `Reporting verified across ${allSources.length} sources: ${sourceNamesList}`,
           'Initial rollout scheduled for immediate phased deployment',
           'Cross-functional teams leading implementation guidelines',
         ],
@@ -58,11 +63,12 @@ export class MockAIProvider extends BaseAIProvider {
         },
         {
           date: 'Current Phase',
-          title: 'Editorial Synthesis',
-          description: 'Fact-checking and draft preparation completed.',
+          title: 'Multi-Source Editorial Synthesis',
+          description: `Consensus verified across ${sourceNamesList}.`,
         },
       ],
       suggestedCategory: req.categorySlug || 'technology',
+      subcategory: req.subcategory,
       tags: [req.categorySlug || 'Technology', req.primarySource.name, 'Editorial', 'Analysis'],
       seoTitle: `${cleanTitle.slice(0, 45)} — THE BRIEF`,
       metaDescription: `Read THE BRIEF's comprehensive analysis on ${cleanTitle.toLowerCase()}. Facts, timeline, and industry implications explained.`.slice(

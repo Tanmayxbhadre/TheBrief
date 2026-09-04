@@ -173,3 +173,35 @@ export async function searchPublishedArticles(query: string): Promise<Article[]>
       a.category.name.toLowerCase().includes(q)
   );
 }
+
+/**
+ * Get dynamic breaking news headline from DB or mock data
+ */
+export async function getDynamicBreakingNews(): Promise<import('./types').BreakingNewsItem | undefined> {
+  try {
+    const breakingDraft = await prisma.articleDraft.findFirst({
+      where: {
+        status: 'PUBLISHED',
+        breaking: true,
+      },
+      include: { category: true },
+      orderBy: { publishedAt: 'desc' },
+    });
+
+    if (breakingDraft) {
+      return {
+        id: breakingDraft.id,
+        headline: breakingDraft.title,
+        url: `/${breakingDraft.category?.slug || 'technology'}/${breakingDraft.slug}`,
+        time: breakingDraft.publishedAt
+          ? new Date(breakingDraft.publishedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          : 'Live',
+      };
+    }
+  } catch (err) {
+    console.error('Error querying dynamic breaking news:', err);
+  }
+
+  const { getBreakingNews } = await import('./mock-data');
+  return getBreakingNews();
+}

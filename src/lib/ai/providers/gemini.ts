@@ -25,11 +25,11 @@ import { buildFactCheckPrompt } from '../prompts/factCheckPrompt';
 
 export class GeminiProvider extends BaseAIProvider {
   readonly name = 'gemini';
-  readonly defaultModel = process.env.AI_MODEL || 'gemini-1.5-pro';
+  readonly defaultModel = process.env.AI_MODEL || 'gemini-3.1-flash-lite';
   private apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
 
   isAvailable(): boolean {
-    return !!this.apiKey;
+    return !!this.apiKey && !this.apiKey.startsWith('PASTE_') && this.apiKey.trim().length > 0;
   }
 
   private async callGenerateContent(

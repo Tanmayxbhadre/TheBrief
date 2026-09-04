@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Article } from '@/lib/types';
 import { formatDate, formatReadingTime } from '@/lib/utils';
 import Breadcrumbs from './Breadcrumbs';
+import MultiSourceAttribution from './MultiSourceAttribution';
 import styles from './ArticleHeader.module.css';
 
 interface ArticleHeaderProps {
@@ -47,6 +48,9 @@ export default function ArticleHeader({ article }: ArticleHeaderProps) {
             <span className={styles.readTime}>{formatReadingTime(article.readingTime)}</span>
           </div>
         </div>
+
+        {/* Multi-Source Attribution Bar */}
+        <MultiSourceAttribution sources={article.sources} />
       </div>
 
       {/* Hero image — full width */}

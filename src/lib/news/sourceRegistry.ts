@@ -6,8 +6,11 @@ export interface NewsSourceConfig {
   defaultCategory: string; // fallback if classifier doesn't match
   language: string;
   country: string;
+  region?: string;
   enabled: boolean;
   priority: number;
+  reliabilityScore: number; // 0-100 reliability rating
+  categoryCoverage?: string[];
 }
 
 export const SOURCES: NewsSourceConfig[] = [
@@ -20,8 +23,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'technology',
     language: 'en',
     country: 'US',
+    region: 'North America',
     enabled: true,
     priority: 1,
+    reliabilityScore: 90,
+    categoryCoverage: ['technology', 'ai', 'startups', 'business'],
   },
   {
     id: 'theverge',
@@ -31,8 +37,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'technology',
     language: 'en',
     country: 'US',
+    region: 'North America',
     enabled: true,
     priority: 1,
+    reliabilityScore: 92,
+    categoryCoverage: ['technology', 'ai', 'science', 'gadgets'],
   },
   {
     id: 'wired',
@@ -42,8 +51,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'technology',
     language: 'en',
     country: 'US',
+    region: 'North America',
     enabled: true,
     priority: 1,
+    reliabilityScore: 93,
+    categoryCoverage: ['technology', 'ai', 'science', 'security'],
   },
   
   // Business
@@ -55,8 +67,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'business',
     language: 'en',
     country: 'US',
+    region: 'North America',
     enabled: true,
     priority: 2,
+    reliabilityScore: 91,
+    categoryCoverage: ['business', 'finance', 'economy', 'markets'],
   },
   
   // India
@@ -68,8 +83,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'india',
     language: 'en',
     country: 'IN',
+    region: 'South Asia',
     enabled: true,
     priority: 1,
+    reliabilityScore: 95,
+    categoryCoverage: ['india', 'politics', 'economy', 'national'],
   },
   {
     id: 'ndtv-latest',
@@ -79,8 +97,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'india',
     language: 'en',
     country: 'IN',
+    region: 'South Asia',
     enabled: true,
     priority: 1,
+    reliabilityScore: 88,
+    categoryCoverage: ['india', 'national', 'entertainment', 'business'],
   },
   
   // World
@@ -92,8 +113,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'world',
     language: 'en',
     country: 'UK',
+    region: 'Global',
     enabled: true,
     priority: 1,
+    reliabilityScore: 96,
+    categoryCoverage: ['world', 'politics', 'science', 'business'],
   },
   {
     id: 'al-jazeera',
@@ -103,8 +127,11 @@ export const SOURCES: NewsSourceConfig[] = [
     defaultCategory: 'world',
     language: 'en',
     country: 'QA',
+    region: 'Middle East & Global',
     enabled: true,
     priority: 2,
+    reliabilityScore: 89,
+    categoryCoverage: ['world', 'politics', 'human-rights', 'economy'],
   }
 ];
 

@@ -33,6 +33,27 @@
   flex: 1;
 }
 
+.categoryRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sourceCountBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #bfdbfe;
+  letter-spacing: 0.02em;
+}
+
 /* ── Headline ── */
 
 .headline {

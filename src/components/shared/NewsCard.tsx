@@ -35,9 +35,16 @@ export default function NewsCard({
 
       {/* Content */}
       <div className={styles.content}>
-        <Link href={`/${article.category.slug}`} className="category-tag">
-          {article.category.name}
-        </Link>
+        <div className={styles.categoryRow}>
+          <Link href={`/${article.category.slug}`} className="category-tag">
+            {article.category.name}
+          </Link>
+          {article.sources && article.sources.length > 1 && (
+            <span className={styles.sourceCountBadge} title={`Synthesized from ${article.sources.length} sources`}>
+              ⚡ {article.sources.length} sources
+            </span>
+          )}
+        </div>
 
         <h2 className={styles.headline}>
           <Link href={articleUrl} className={styles.headlineLink}>

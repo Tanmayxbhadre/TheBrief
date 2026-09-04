@@ -73,6 +73,9 @@ export async function GET(request: Request) {
         include: {
           source: true,
           category: true,
+          cluster: {
+            select: { id: true, title: true, sourceCount: true },
+          },
           drafts: {
             select: { id: true, title: true, status: true, slug: true },
           },

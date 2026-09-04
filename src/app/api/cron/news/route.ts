@@ -51,15 +51,55 @@ async function handleCronRequest(request: Request) {
       });
     }
 
+    // 2. Run clustering on any unassigned news items
+    let clusteringSummary = { processed: 0, clustersCreated: 0 };
+    try {
+      const { clusterUnassignedNewsItems } = await import('@/lib/news/clustering');
+      clusteringSummary = await clusterUnassignedNewsItems();
+    } catch (clusterErr) {
+      console.warn('[NEWS-CRON] Clustering step skipped:', clusterErr);
+    }
+
+    // 3. Run background AI drafting worker
+    let aiSummary = { processed: 0, draftsCreated: 0 };
+    try {
+      const { runArticleGenerationWorker } = await import('@/lib/ai/articleGenerationWorker');
+      aiSummary = await runArticleGenerationWorker(3);
+    } catch (aiErr) {
+      console.warn('[NEWS-CRON] AI worker step skipped:', aiErr);
+    }
+
+    // 4. Tick the background job queue
+    let queueSummary = { processed: 0, completed: 0, failed: 0 };
+    try {
+      const { runJobWorkerTick } = await import('@/lib/queue/jobQueue');
+      queueSummary = await runJobWorkerTick(3);
+    } catch (qErr) {
+      console.warn('[NEWS-CRON] Job queue tick skipped:', qErr);
+    }
+
+    // 5. Revalidate cache
+    try {
+      const { revalidateNewsCache } = await import('@/lib/revalidate');
+      revalidateNewsCache();
+    } catch (revErr) {
+      console.warn('[NEWS-CRON] Cache revalidation skipped:', revErr);
+    }
+
     return NextResponse.json({
       success: result.success,
       jobId: result.jobId,
       status: result.status,
-      sourcesProcessed: result.sourcesProcessed,
-      newItems: result.newItems,
-      duplicates: result.duplicates,
-      failedSources: result.failedSources,
-      durationMs: result.durationMs,
+      collection: {
+        sourcesProcessed: result.sourcesProcessed,
+        newItems: result.newItems,
+        duplicates: result.duplicates,
+        failedSources: result.failedSources,
+        durationMs: result.durationMs,
+      },
+      clustering: clusteringSummary,
+      aiGeneration: aiSummary,
+      queue: queueSummary,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';

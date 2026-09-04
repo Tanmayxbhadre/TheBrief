@@ -29,7 +29,7 @@ export class AnthropicProvider extends BaseAIProvider {
   private apiKey = process.env.ANTHROPIC_API_KEY || process.env.AI_API_KEY;
 
   isAvailable(): boolean {
-    return !!this.apiKey;
+    return !!this.apiKey && !this.apiKey.startsWith('PASTE_') && this.apiKey.trim().length > 0;
   }
 
   private async callMessages(

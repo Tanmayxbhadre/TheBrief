@@ -34,6 +34,7 @@ export const StructuredArticleDraftSchema = z.object({
   whatYouNeedToKnow: WhatYouNeedToKnowSchema,
   timeline: z.array(TimelineEntrySchema).optional(),
   suggestedCategory: z.string().default('technology'),
+  subcategory: z.string().optional(),
   tags: z.array(z.string()).min(1, 'At least 1 tag required').max(10),
   seoTitle: z.string().min(10, 'SEO title must be at least 10 characters'),
   metaDescription: z.string().min(30, 'Meta description must be at least 30 characters'),

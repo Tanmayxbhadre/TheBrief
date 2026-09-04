@@ -302,6 +302,257 @@ async function runAllTests() {
   assert(secondRunResult.duplicates >= 0, 'Second run tracks duplicate stories rather than creating duplicates');
 
   // ----------------------------------------------------
+  // TEST GROUP 8: News Intelligence & Scoring
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 8: News Intelligence & Scoring ---');
+  const {
+    extractEntities,
+    detectSubcategory,
+    calculateImportanceScore,
+    calculateBreakingScore,
+    calculateTrendingScore,
+    analyzeNewsItem,
+  } = await import('../src/lib/news/newsIntelligenceService');
+
+  const entities = extractEntities(
+    'OpenAI and Microsoft announce new GPT-5 model with advanced reasoning capabilities in California',
+    'Sam Altman presented alongside Satya Nadella'
+  );
+  assert(entities.companies.includes('OpenAI') && entities.companies.includes('Microsoft'), 'Entities extract major companies correctly');
+  assert(entities.people.includes('Sam Altman') && entities.people.includes('Satya Nadella'), 'Entities extract key people correctly');
+  assert(entities.products.includes('GPT-5'), 'Entities extract product names correctly');
+  assert(entities.locations.includes('California'), 'Entities extract locations correctly');
+
+  const subcategory = detectSubcategory('ai', 'OpenAI unveils new GPT-5 model');
+  assert(subcategory === 'OpenAI' || subcategory === 'AI Models', 'Subcategory detection identifies specific domain correctly');
+
+  const breakingResult = calculateBreakingScore('BREAKING: Major Earthquake strikes coastal region, emergency response active');
+  assert(breakingResult.isBreaking && breakingResult.score >= 70, 'Breaking news signals detect genuine urgency');
+
+  const nonBreakingResult = calculateBreakingScore('Quarterly market outlook indicates steady semiconductor demand');
+  assert(!nonBreakingResult.isBreaking, 'Standard news is not falsely classified as breaking');
+
+  const importanceResult = calculateImportanceScore({
+    title: 'OpenAI launches new GPT-5 model with historic breakthrough in reasoning',
+    sourceReliability: 95,
+    sourcePriority: 1,
+    entities,
+    isBreaking: false,
+    sourceCount: 6,
+  });
+  assert(importanceResult.score >= 80, 'High-impact multi-source story achieves HIGH/CRITICAL importance score');
+  assert(importanceResult.reason.length > 0, 'Importance reason provides clear editorial explanation');
+
+  const trendingScore = calculateTrendingScore({
+    sourceCount: 6,
+    entityCount: 4,
+    publishedAt: new Date(),
+    importanceScore: 85,
+  });
+  assert(trendingScore >= 60, 'Trending score reflects high multi-source velocity and recency');
+
+  const fullAnalysis = await analyzeNewsItem({
+    title: 'NVIDIA and Google Cloud expand strategic AI infrastructure partnership',
+    description: 'Jensen Huang and Sundar Pichai announced new clusters.',
+    sourceId: 'techcrunch',
+    publishedAt: new Date(),
+  });
+  assert(fullAnalysis.category === 'technology' || fullAnalysis.category === 'ai', 'Full analysis classifies category accurately');
+  assert(fullAnalysis.confidenceScore >= 70, 'Analysis calculates dependable confidence score');
+
+  // ----------------------------------------------------
+  // TEST GROUP 9: Story Clustering & Layered Similarity
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 9: Story Clustering Engine ---');
+  const {
+    computeStorySimilarity,
+    tokenizeText,
+    computeJaccardSimilarity,
+    assignItemToCluster,
+  } = await import('../src/lib/news/clustering');
+
+  const tokensA = tokenizeText('OpenAI launches new model GPT-5');
+  const tokensB = tokenizeText('OpenAI unveils new GPT-5 model with reasoning');
+  const jaccard = computeJaccardSimilarity(tokensA, tokensB);
+  assert(jaccard >= 0.4, 'Jaccard similarity recognizes overlapping story tokens');
+
+  const similarityScore = computeStorySimilarity(
+    { title: 'OpenAI announces GPT-5 frontier model', description: 'New artificial intelligence system launched.' },
+    { title: 'OpenAI unveils latest GPT-5 AI model with advanced capabilities', description: 'Sam Altman reveals new frontier model.' }
+  );
+  assert(similarityScore >= 0.4, 'Layered similarity detects matching news stories across different outlets');
+
+  const unrelatedSimilarity = computeStorySimilarity(
+    { title: 'OpenAI announces GPT-5 frontier model' },
+    { title: 'Sensex falls 400 points as banking stocks retreat in Mumbai' }
+  );
+  assert(unrelatedSimilarity < 0.2, 'Dissimilar stories receive low similarity score');
+
+  // Create test news items from distinct sources for clustering
+  const clusterSourceA = await prisma.source.findFirst() || await prisma.source.create({
+    data: { id: 'test-src-a', name: 'Reuters Wire', url: 'https://reuters.com', reliabilityScore: 95 },
+  });
+  const clusterSourceB = await prisma.source.findFirst({ where: { id: { not: clusterSourceA.id } } }) || await prisma.source.create({
+    data: { id: 'test-src-b', name: 'BBC Global', url: 'https://bbc.com', reliabilityScore: 95 },
+  });
+
+  const uniqueHash1 = `hash-${Date.now()}-1`;
+  const uniqueHash2 = `hash-${Date.now()}-2`;
+
+  const item1 = await prisma.newsItem.create({
+    data: {
+      sourceId: clusterSourceA.id,
+      title: 'DeepSeek unveils revolutionary open reasoning model',
+      originalUrl: `https://reuters.com/article-${Date.now()}-1`,
+      normalizedUrl: `https://reuters.com/article-${Date.now()}-1`,
+      contentHash: uniqueHash1,
+      importanceScore: 88,
+      status: 'DISCOVERED',
+    },
+  });
+
+  const item2 = await prisma.newsItem.create({
+    data: {
+      sourceId: clusterSourceB.id,
+      title: 'DeepSeek launches new open-weights reasoning model to challenge competitors',
+      originalUrl: `https://bbc.com/article-${Date.now()}-2`,
+      normalizedUrl: `https://bbc.com/article-${Date.now()}-2`,
+      contentHash: uniqueHash2,
+      importanceScore: 85,
+      status: 'DISCOVERED',
+    },
+  });
+
+  const clusterId1 = await assignItemToCluster(item1.id);
+  assert(Boolean(clusterId1), 'First story seeds a new StoryCluster');
+
+  const clusterId2 = await assignItemToCluster(item2.id);
+  assert(clusterId1 === clusterId2, 'Second matching story from different source joins the same StoryCluster');
+
+  const formedCluster = await prisma.storyCluster.findUnique({
+    where: { id: clusterId1 },
+    include: { items: true },
+  });
+  assert(formedCluster?.sourceCount === 2, 'StoryCluster tracks distinct source count accurately (2 sources)');
+
+  // ----------------------------------------------------
+  // TEST GROUP 10: Multi-Source AI Synthesis & Quality Checks
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 10: Multi-Source Synthesis & Quality Scoring ---');
+  const {
+    calculateAiQualityScore,
+    calculatePublishConfidence,
+    generateDraftForCluster,
+  } = await import('../src/lib/ai/articleGenerationWorker');
+
+  const qualityEval = calculateAiQualityScore(validDraft, [{ name: 'NVIDIA Newsroom', url: 'https://nvidianews.nvidia.com' }]);
+  assert(qualityEval.qualityScore >= 85, 'High-standard draft achieves top quality score');
+
+  const confidenceEval = calculatePublishConfidence({
+    aiQualityScore: 92,
+    sourceReliability: 95,
+    sourceCount: 3,
+    category: 'technology',
+  });
+  assert(confidenceEval.publishConfidence >= 80, 'Multi-source verified draft earns high publish confidence');
+
+  const clusterDraftId = await generateDraftForCluster(clusterId1, 'Automated Test');
+  assert(Boolean(clusterDraftId), 'Multi-source cluster generates synthesized ArticleDraft');
+
+  const createdClusterDraft = await prisma.articleDraft.findUnique({
+    where: { id: clusterDraftId },
+    include: { cluster: true, revisions: true },
+  });
+  assert(createdClusterDraft?.clusterId === clusterId1, 'Draft is linked to the parent StoryCluster');
+  assert(createdClusterDraft?.revisions.length === 1, 'Initial revision history is recorded');
+
+  // Verify sources contain both sources
+  let parsedDraftSources: Array<{ name: string; url: string }> = [];
+  try {
+    if (createdClusterDraft?.sources) parsedDraftSources = JSON.parse(createdClusterDraft.sources);
+  } catch {}
+  assert(parsedDraftSources.length >= 2, 'Synthesized article retains attribution for all contributing sources');
+
+  // ----------------------------------------------------
+  // TEST GROUP 11: Database-Backed Job Queue
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 11: Job Queue System ---');
+  const { enqueueJob, claimNextJob, completeJob, getQueueStats } = await import('../src/lib/queue/jobQueue');
+
+  const enqueuedJobId = await enqueueJob({
+    type: 'CLEANUP',
+    payload: { test: true },
+  });
+  assert(Boolean(enqueuedJobId), 'Job enqueues into database queue successfully');
+
+  const claimed = await claimNextJob();
+  assert(Boolean(claimed), 'Job worker claims pending job atomically');
+
+  if (claimed) {
+    await completeJob(claimed.id);
+    const completedJob = await prisma.job.findUnique({ where: { id: claimed.id } });
+    assert(completedJob?.status === 'COMPLETED', 'Job status transitions to COMPLETED upon finish');
+  }
+
+  const queueStats = await getQueueStats();
+  assert(queueStats.completed >= 1, 'Queue stats reflect completed jobs');
+
+  // ----------------------------------------------------
+  // TEST GROUP 12: Flagship Daily Briefing Generation
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 12: Daily Briefing Generator ---');
+  const { generateDailyBriefing, getLatestDailyBriefing } = await import('../src/lib/news/dailyBriefService');
+
+  const briefId = await generateDailyBriefing('morning');
+  assert(Boolean(briefId), 'Daily Briefing generates successfully from published coverage');
+
+  const latestBrief = await getLatestDailyBriefing('morning');
+  assert(latestBrief.content.topStories.length > 0, 'Daily Brief includes prioritized Top Stories');
+  assert(latestBrief.content.whatToWatch.length > 0, 'Daily Brief includes What To Watch forward-looking agenda');
+
+  // ----------------------------------------------------
+  // TEST GROUP 13: Environment Diagnostics & Safe Provider Fallback
+  // ----------------------------------------------------
+  console.log('\n--- Test Suite 13: Environment Diagnostics & Safe Provider Fallback ---');
+  const { getEnvironmentDiagnostics } = await import('../src/lib/envCheck');
+  const envDiag = getEnvironmentDiagnostics();
+
+  assert(envDiag.DATABASE === 'CONFIGURED', 'Database is detected as CONFIGURED');
+  assert(
+    envDiag.OPENAI === 'CONFIGURED' || envDiag.OPENAI === 'NOT CONFIGURED',
+    'OpenAI status is safe binary status string'
+  );
+  assert(
+    envDiag.ANTHROPIC === 'CONFIGURED' || envDiag.ANTHROPIC === 'NOT CONFIGURED',
+    'Anthropic status is safe binary status string'
+  );
+  assert(
+    envDiag.GEMINI === 'CONFIGURED' || envDiag.GEMINI === 'NOT CONFIGURED',
+    'Gemini status is safe binary status string'
+  );
+  assert(envDiag.AUTO_PUBLISH === 'DISABLED', 'Autonomous publishing defaults to DISABLED for safety');
+
+  // Verify missing OpenAI and Anthropic keys do NOT crash provider instances
+  const { OpenAIProvider } = await import('../src/lib/ai/providers/openai');
+  const { AnthropicProvider } = await import('../src/lib/ai/providers/anthropic');
+  const { GeminiProvider } = await import('../src/lib/ai/providers/gemini');
+
+  const testOpenAI = new OpenAIProvider();
+  assert(typeof testOpenAI.isAvailable() === 'boolean', 'OpenAI provider initializes without crash');
+
+  const testAnthropic = new AnthropicProvider();
+  assert(typeof testAnthropic.isAvailable() === 'boolean', 'Anthropic provider initializes without crash');
+
+  const testGemini = new GeminiProvider();
+  assert(typeof testGemini.isAvailable() === 'boolean', 'Gemini provider initializes without crash');
+
+  // Clean up test data
+  await prisma.articleDraft.delete({ where: { id: clusterDraftId } });
+  await prisma.storyCluster.delete({ where: { id: clusterId1 } });
+  await prisma.newsItem.delete({ where: { id: item1.id } });
+  await prisma.newsItem.delete({ where: { id: item2.id } });
+
+  // ----------------------------------------------------
   // Summary
   // ----------------------------------------------------
   console.log('\n==================================================');

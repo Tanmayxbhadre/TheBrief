@@ -8,24 +8,27 @@ datasource db {
 }
 
 model Source {
-  id          String     @id @default(uuid())
-  name        String
-  type        String     @default("rss") // rss, api
-  url         String
-  categoryId  String?
-  category    Category?  @relation(fields: [categoryId], references: [id])
-  country     String?
-  language    String?
-  enabled     Boolean    @default(true)
-  priority    Int        @default(1)
-  lastFetch            DateTime?
-  lastSuccessfulFetch  DateTime?
-  lastError            String?
-  consecutiveFailures  Int        @default(0)
-  items                NewsItem[]
-  logs                 FetchLog[]
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
+  id                  String     @id @default(uuid())
+  name                String
+  type                String     @default("rss") // rss, api
+  url                 String
+  categoryId          String?
+  category            Category?  @relation(fields: [categoryId], references: [id])
+  country             String?
+  language            String?
+  enabled             Boolean    @default(true)
+  priority            Int        @default(1)
+  reliabilityScore    Int        @default(85) // 0-100 score
+  region              String?
+  categoryCoverage    String?    // JSON string of string[]
+  lastFetch           DateTime?
+  lastSuccessfulFetch DateTime?
+  lastError           String?
+  consecutiveFailures Int        @default(0)
+  items               NewsItem[]
+  logs                FetchLog[]
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
 }
 
 model Category {
@@ -45,104 +48,197 @@ model Category {
 }
 
 model StoryCluster {
-  id              String         @id @default(uuid())
-  title           String         // Representative headline of the cluster
-  slug            String         @unique
-  summary         String?        // Aggregated summary of the underlying event
-  categoryId      String?
-  category        Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  status          String         @default("PENDING") // PENDING, ACTIVE, DRAFTED, PUBLISHED, ARCHIVED
-  sourceCount     Int            @default(1)
-  confidenceScore Float          @default(1.0)
-  leadImageUrl    String?
-  items           NewsItem[]
-  drafts          ArticleDraft[]
-  firstSeenAt     DateTime       @default(now())
-  lastSeenAt      DateTime       @default(now())
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                  String         @id @default(uuid())
+  title               String         // Representative headline of the cluster
+  canonicalTitle      String?
+  slug                String         @unique
+  summary             String?        // Aggregated summary of the underlying event
+  categoryId          String?
+  category            Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  status              String         @default("PENDING") // PENDING, ACTIVE, DRAFTED, PUBLISHED, ARCHIVED
+  sourceCount         Int            @default(1)
+  confidenceScore     Float          @default(1.0)
+  importanceScore     Int            @default(50)
+  trendingScore       Int            @default(0)
+  breakingScore       Int            @default(0)
+  isBreaking          Boolean        @default(false)
+  canonicalNewsItemId String?
+  leadImageUrl        String?
+  items               NewsItem[]
+  drafts              ArticleDraft[]
+  firstSeenAt         DateTime       @default(now())
+  lastSeenAt          DateTime       @default(now())
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   @@index([status])
   @@index([categoryId])
   @@index([lastSeenAt])
+  @@index([importanceScore])
+  @@index([isBreaking])
 }
 
 model NewsItem {
-  id            String         @id @default(uuid())
-  sourceId      String
-  source        Source         @relation(fields: [sourceId], references: [id])
-  externalId    String?
-  title         String
-  description   String?
-  originalUrl   String
-  normalizedUrl String         @unique
-  author        String?
-  publishedAt   DateTime?
-  discoveredAt  DateTime       @default(now())
-  imageUrl      String?
-  imageAlt      String?
-  categoryId    String?
-  category      Category?      @relation(fields: [categoryId], references: [id])
-  clusterId     String?
-  cluster       StoryCluster?  @relation(fields: [clusterId], references: [id], onDelete: SetNull)
-  status        String         @default("DISCOVERED") // DISCOVERED, REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
-  contentHash   String         @unique
-  internalNotes String?
-  checklist     String?        // JSON string of checklist items
-  drafts        ArticleDraft[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id                       String         @id @default(uuid())
+  sourceId                 String
+  source                   Source         @relation(fields: [sourceId], references: [id])
+  externalId               String?
+  title                    String
+  description              String?
+  originalUrl              String
+  normalizedUrl            String         @unique
+  author                   String?
+  publishedAt              DateTime?
+  discoveredAt             DateTime       @default(now())
+  imageUrl                 String?
+  imageAlt                 String?
+  categoryId               String?
+  category                 Category?      @relation(fields: [categoryId], references: [id])
+  subcategory              String?
+  clusterId                String?
+  cluster                  StoryCluster?  @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  status                   String         @default("DISCOVERED") // DISCOVERED, REVIEW, APPROVED, PUBLISHED, REJECTED, ARCHIVED
+  contentHash              String         @unique
+  importanceScore          Int            @default(50) // 0-100
+  importanceReason         String?
+  breakingScore            Int            @default(0) // 0-100
+  isBreaking               Boolean        @default(false)
+  breakingOverride         String         @default("AUTO") // AUTO, BREAKING, NOT_BREAKING
+  trendingScore            Int            @default(0) // 0-100
+  entities                 String?        // JSON string of { people, companies, products, locations, technologies }
+  editorialRecommendation  String         @default("REVIEW") // AUTO_DRAFT, REVIEW, LOW_PRIORITY, REJECT
+  intelligenceProcessed    Boolean        @default(false)
+  confidenceScore          Int            @default(50) // 0-100
+  internalNotes            String?
+  checklist                String?        // JSON string of checklist items
+  drafts                   ArticleDraft[]
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
   @@index([publishedAt])
   @@index([sourceId])
   @@index([categoryId])
   @@index([clusterId])
   @@index([status])
+  @@index([importanceScore])
+  @@index([trendingScore])
+  @@index([isBreaking])
+  @@index([editorialRecommendation])
 }
 
 model ArticleDraft {
-  id               String        @id @default(uuid())
-  newsItemId       String?
-  newsItem         NewsItem?     @relation(fields: [newsItemId], references: [id], onDelete: SetNull)
-  clusterId        String?
-  cluster          StoryCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
-  title            String
-  slug             String        @unique
-  excerpt          String
-  content          String
-  categoryId       String?
-  category         Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  authorName       String        @default("THE BRIEF Editorial Team")
-  authorId         String?
-  featuredImage    String?
-  imageAlt         String?
-  status           String        @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
-  seoTitle         String?
-  metaDescription  String?
-  canonicalUrl     String?
-  tags             String?       // JSON string of string[]
-  sources          String?       // JSON string of { name: string, url: string }[]
-  quickSummary     String?       // JSON string of string[]
-  whatYouNeedToKnow String?      // JSON string of { whatHappened, whyItMatters, keyDetails, whatsNext }
-  timeline         String?       // JSON string of { date, title, description }[]
-  internalNotes    String?
-  readingTime      Int           @default(3)
-  featured         Boolean       @default(false)
-  breaking         Boolean       @default(false)
-  aiGenerated      Boolean       @default(false)
-  aiProvider       String?
-  aiModel          String?
-  aiFlags          String?       // JSON string of { needsVerification: boolean, verificationNotes: string[] }
-  generationLogs   AIGenerationLog[]
-  publishedAt      DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                String            @id @default(uuid())
+  newsItemId        String?
+  newsItem          NewsItem?         @relation(fields: [newsItemId], references: [id], onDelete: SetNull)
+  clusterId         String?
+  cluster           StoryCluster?     @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  title             String
+  slug              String            @unique
+  excerpt           String
+  content           String
+  categoryId        String?
+  category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory       String?
+  authorName        String            @default("THE BRIEF Editorial Team")
+  authorId          String?
+  featuredImage     String?
+  imageAlt          String?
+  status            String            @default("DRAFT") // DRAFT, REVIEW, APPROVED, PUBLISHED, ARCHIVED
+  seoTitle          String?
+  metaDescription   String?
+  canonicalUrl      String?
+  tags              String?           // JSON string of string[]
+  sources           String?           // JSON string of { name: string, url: string }[]
+  quickSummary      String?           // JSON string of string[]
+  whatYouNeedToKnow String?           // JSON string of { whatHappened, whyItMatters, keyDetails, whatsNext }
+  timeline          String?           // JSON string of { date, title, description }[]
+  internalNotes     String?
+  readingTime       Int               @default(3)
+  featured          Boolean           @default(false)
+  breaking          Boolean           @default(false)
+  aiGenerated       Boolean           @default(false)
+  aiProvider        String?
+  aiModel           String?
+  aiQualityScore    Int?              // 0-100
+  publishConfidence Int?              // 0-100
+  autoPublished     Boolean           @default(false)
+  aiFlags           String?           // JSON string of { needsVerification: boolean, verificationNotes: string[] }
+  generationLogs    AIGenerationLog[]
+  revisions         ArticleRevision[]
+  analytics         ArticleAnalytics?
+  publishedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@index([status])
   @@index([slug])
   @@index([publishedAt])
   @@index([categoryId])
   @@index([clusterId])
+}
+
+model ArticleRevision {
+  id              String        @id @default(uuid())
+  draftId         String
+  draft           ArticleDraft  @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  changedBy       String        @default("Admin Editor")
+  changeType      String        // initial_draft, editorial_edit, ai_improve, restore, auto_publish
+  title           String
+  excerpt         String?
+  content         String
+  sources         String?
+  createdAt       DateTime      @default(now())
+
+  @@index([draftId])
+  @@index([createdAt])
+}
+
+model Job {
+  id          String    @id @default(uuid())
+  type        String    // NEWS_COLLECTION, AI_PROCESSING, PUBLISHING, DAILY_BRIEF, CLEANUP
+  status      String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED
+  payload     String?   // JSON string
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?
+  scheduledAt DateTime  @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status])
+  @@index([type])
+  @@index([scheduledAt])
+}
+
+model ArticleAnalytics {
+  id             String        @id @default(uuid())
+  draftId        String        @unique
+  draft          ArticleDraft  @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  views          Int           @default(0)
+  uniqueViews    Int           @default(0)
+  avgReadTimeSec Int           @default(0)
+  shares         Int           @default(0)
+  sourceClicks   Int           @default(0)
+  updatedAt      DateTime      @updatedAt
+}
+
+model DailyBriefing {
+  id          String    @id @default(uuid())
+  title       String
+  slug        String    @unique
+  date        DateTime
+  briefType   String    @default("morning") // morning, evening
+  summary     String
+  content     String    // JSON or structured markdown
+  status      String    @default("PUBLISHED") // DRAFT, PUBLISHED
+  publishedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([date])
+  @@index([briefType])
+  @@index([status])
 }
 
 model AIGenerationLog {

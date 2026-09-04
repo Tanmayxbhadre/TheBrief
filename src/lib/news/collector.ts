@@ -3,6 +3,8 @@ import { getEnabledSources } from './sourceRegistry';
 import { fetchRssFeed } from './rssFetcher';
 import { normalizeUrl, generateContentHash } from './normalization';
 import { classifyCategory } from './classifier';
+import { analyzeNewsItem } from './newsIntelligenceService';
+import { assignItemToCluster } from './clustering';
 
 export interface SourceFailureRecord {
   sourceId: string;
@@ -98,9 +100,18 @@ export async function collectAllNews(): Promise<CollectionSummary> {
           continue;
         }
 
-        // Insert new item safely
+        // Compute news intelligence metrics
+        const intelligence = await analyzeNewsItem({
+          title: item.title,
+          description: item.description,
+          sourceId: sourceConfig.id,
+          publishedAt: item.publishedAt,
+          defaultCategory: categoryName,
+        });
+
+        // Insert new item safely with intelligence
         try {
-          await prisma.newsItem.create({
+          const created = await prisma.newsItem.create({
             data: {
               sourceId: sourceConfig.id,
               externalId: item.externalId,
@@ -112,10 +123,27 @@ export async function collectAllNews(): Promise<CollectionSummary> {
               publishedAt: item.publishedAt,
               imageUrl: item.imageUrl,
               categoryId: dbCategory.id,
+              subcategory: intelligence.subcategory,
+              importanceScore: intelligence.importanceScore,
+              importanceReason: intelligence.importanceReason,
+              breakingScore: intelligence.breakingScore,
+              isBreaking: intelligence.isBreaking,
+              trendingScore: intelligence.trendingScore,
+              entities: JSON.stringify(intelligence.entities),
+              editorialRecommendation: intelligence.editorialRecommendation,
+              confidenceScore: intelligence.confidenceScore,
+              intelligenceProcessed: true,
               contentHash: contentHash,
               status: 'DISCOVERED',
             },
           });
+
+          // Assign to cluster
+          try {
+            await assignItemToCluster(created.id);
+          } catch (clusterErr) {
+            console.warn('[NEWS] Failed to cluster item:', clusterErr);
+          }
 
           newItems++;
           summary.newItems++;

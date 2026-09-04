@@ -13,6 +13,7 @@ import Timeline from '@/components/article/Timeline';
 import RelatedStories from '@/components/article/RelatedStories';
 import AdSlot from '@/components/shared/AdSlot';
 import SchemaOrg from '@/components/seo/SchemaOrg';
+import SocialShare from '@/components/article/SocialShare';
 
 interface Props {
   params: Promise<{ category: string; slug: string }>;
@@ -82,6 +83,13 @@ export default async function ArticlePage({ params }: Props) {
       <article itemScope itemType="https://schema.org/NewsArticle">
         {/* Article Header */}
         <ArticleHeader article={article} />
+
+        <div className="article-container">
+          <SocialShare
+            title={article.title}
+            url={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://thebrief.in'}/${article.category.slug}/${article.slug}`}
+          />
+        </div>
 
         {/* Ad slot below header */}
         <div className="article-container" style={{ paddingBottom: '2rem' }}>

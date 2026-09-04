@@ -6,13 +6,12 @@ import CategorySection from '@/components/home/CategorySection';
 import TrendingSection from '@/components/home/TrendingSection';
 import NewsletterSignup from '@/components/home/NewsletterSignup';
 import AdSlot from '@/components/shared/AdSlot';
-import {
-  getBreakingNews,
-} from '@/lib/mock-data';
+
 import {
   getAllPublishedArticles,
   getLatestPublishedArticles,
   getPublishedArticlesByCategory,
+  getDynamicBreakingNews,
 } from '@/lib/articles';
 import styles from './page.module.css';
 
@@ -31,7 +30,7 @@ export default async function HomePage() {
   const secondary = allArticles.filter((a) => a.id !== featured.id && a.featured).slice(0, 3);
   const latestArticles = await getLatestPublishedArticles(8);
   const trendingArticles = allArticles.slice(0, 5);
-  const breakingItem = getBreakingNews();
+  const breakingItem = await getDynamicBreakingNews();
 
   const techArticles = await getPublishedArticlesByCategory('technology', 4);
   const indiaArticles = await getPublishedArticlesByCategory('india', 4);

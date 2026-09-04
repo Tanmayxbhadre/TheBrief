@@ -13,11 +13,13 @@ export interface SourceContext {
 
 export interface GenerateDraftRequest {
   newsItemId?: string;
+  clusterId?: string;
   headline: string;
   description?: string;
   primarySource: SourceContext;
   additionalSources?: SourceContext[];
   categorySlug?: string;
+  subcategory?: string;
   mode?: DraftMode;
   editorNotes?: string;
 }
@@ -49,6 +51,7 @@ export interface StructuredArticleDraft {
   whatYouNeedToKnow?: WhatYouNeedToKnowStructure;
   timeline?: TimelineEntry[];
   suggestedCategory: string;
+  subcategory?: string;
   tags: string[];
   seoTitle: string;
   metaDescription: string;

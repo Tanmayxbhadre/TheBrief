@@ -23,6 +23,10 @@ interface NewsItemWithRelations {
   discoveredAt: string;
   imageUrl: string | null;
   status: string;
+  importanceScore?: number;
+  trendingScore?: number;
+  isBreaking?: boolean;
+  cluster?: { id: string; title: string; sourceCount: number } | null;
   source: { id: string; name: string };
   category: { id: string; name: string; slug: string } | null;
   drafts?: { id: string; title: string; status: string; slug: string }[];
@@ -433,6 +437,37 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
                               {item.description}
                             </p>
                           )}
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                            {item.cluster && (
+                              <span
+                                style={{
+                                  fontSize: '0.6875rem',
+                                  background: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  padding: '0.1rem 0.45rem',
+                                  borderRadius: '4px',
+                                  fontWeight: 600,
+                                  border: '1px solid #bfdbfe',
+                                }}
+                              >
+                                In Cluster ({item.cluster.sourceCount} sources)
+                              </span>
+                            )}
+                            {item.importanceScore !== undefined && (
+                              <span
+                                style={{
+                                  fontSize: '0.6875rem',
+                                  background: item.importanceScore >= 80 ? '#fef3c7' : '#f1f5f9',
+                                  color: item.importanceScore >= 80 ? '#92400e' : '#475569',
+                                  padding: '0.1rem 0.45rem',
+                                  borderRadius: '4px',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Impact: {item.importanceScore}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
