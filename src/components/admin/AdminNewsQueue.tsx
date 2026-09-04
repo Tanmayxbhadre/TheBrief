@@ -517,9 +517,9 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
                           <Link
                             href={`/admin/drafts/${draft!.id}`}
                             className={`${styles.actionIconBtn} ${styles.actionDraftBtn}`}
-                            title="Edit attached draft"
+                            title={draft!.status === 'PUBLISHED' || item.status === 'PUBLISHED' ? 'Edit published article' : 'Edit attached draft'}
                           >
-                            Edit Draft
+                            {draft!.status === 'PUBLISHED' || item.status === 'PUBLISHED' ? 'Edit Article' : 'Edit Draft'}
                           </Link>
                         ) : (
                           <button

@@ -359,7 +359,7 @@ export function StoryDetailInspector({ item }: StoryDetailInspectorProps) {
               className={`${styles.btn} ${styles.btnSuccess}`}
             >
               <FileEdit size={14} />
-              <span>Open Existing Draft ({draft!.status})</span>
+              <span>{draft!.status === 'PUBLISHED' ? 'Edit Published Article (PUBLISHED)' : `Open Existing Draft (${draft!.status})`}</span>
             </Link>
           ) : (
             <button onClick={handleCreateManualDraft} className={styles.btn}>

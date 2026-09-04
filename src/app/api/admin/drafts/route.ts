@@ -14,8 +14,13 @@ export async function GET(request: Request) {
 
     const where: Prisma.ArticleDraftWhereInput = {};
 
-    if (status && status !== 'all') {
+    if (status && status !== 'all' && status !== 'all_drafts') {
       where.status = status.toUpperCase();
+    } else if (status === 'all') {
+      // no status filter: return everything across all statuses
+    } else {
+      // Default / all_drafts: return active editorial drafts only (not published/archived)
+      where.status = { in: ['DRAFT', 'REVIEW', 'APPROVED'] };
     }
 
     if (category && category !== 'all') {

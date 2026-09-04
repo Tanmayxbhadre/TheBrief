@@ -37,7 +37,7 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState('all_drafts');
   const [filter, setFilter] = useState('all'); // all | needs_review | high_quality | low_confidence | sensitive | breaking | recently_created
   const [creating, setCreating] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -164,12 +164,13 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
           value={status}
           onChange={(e) => setStatus(e.target.value)}
         >
-          <option value="all">All Statuses</option>
-          <option value="draft">Draft</option>
+          <option value="all_drafts">All Drafts (Active)</option>
+          <option value="draft">Draft Only</option>
           <option value="review">Under Review</option>
           <option value="approved">Approved</option>
           <option value="published">Published</option>
           <option value="archived">Archived</option>
+          <option value="all">All Statuses (Everything)</option>
         </select>
 
         <select
