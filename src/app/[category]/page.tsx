@@ -8,6 +8,9 @@ import { formatRelativeTime, formatReadingTime } from '@/lib/utils';
 import AdSlot from '@/components/shared/AdSlot';
 import styles from './category.module.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ category: string }>;
 }

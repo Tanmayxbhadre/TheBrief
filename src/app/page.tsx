@@ -15,6 +15,9 @@ import {
 } from '@/lib/articles';
 import styles from './page.module.css';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: 'THE BRIEF — Serious Journalism for the Modern Reader',
   description:

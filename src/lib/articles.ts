@@ -130,9 +130,8 @@ export async function getAllPublishedArticles(): Promise<Article[]> {
     const existingSlugs = new Set(dbArticles.map((a) => a.slug));
     const nonDupeMocks = mockArticles.filter((a) => !existingSlugs.has(a.slug));
 
-    return [...dbArticles, ...nonDupeMocks].sort(
-      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
-    );
+    // Real published articles from database take priority, followed by baseline mock items
+    return [...dbArticles, ...nonDupeMocks];
   } catch (err) {
     console.error('Error fetching all published articles:', err);
     return mockArticles;
