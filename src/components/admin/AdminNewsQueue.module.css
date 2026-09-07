@@ -136,6 +136,21 @@
   color: #c0392b;
 }
 
+.bulkBtnPublish {
+  background-color: #166534;
+  border-color: #14532d;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.bulkBtnPublish:hover {
+  background-color: #15803d;
+  border-color: #166534;
+  color: #ffffff;
+}
+
 .tableCard {
   background-color: #ffffff;
   border: 1px solid var(--color-border, #e6e6e3);

@@ -42,6 +42,14 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
   const [creating, setCreating] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
+  // Bulk actions state
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkConfirm, setBulkConfirm] = useState<{
+    action: 'publish' | 'approve' | 'review' | 'delete' | 'archive';
+    label: string;
+  } | null>(null);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
   const [deleteDraftId, setDeleteDraftId] = useState<string | null>(null);
 
   const fetchDrafts = React.useCallback(async () => {
@@ -70,6 +78,51 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
     }, 200);
     return () => clearTimeout(timer);
   }, [fetchDrafts]);
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(drafts.map((d) => d.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectItem = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkActionExecute = async () => {
+    if (!bulkConfirm || selectedIds.length === 0) return;
+    setBulkProcessing(true);
+
+    try {
+      const res = await fetch('/api/admin/drafts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: bulkConfirm.action,
+          ids: selectedIds,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        const actionLabel = bulkConfirm.action === 'publish' ? 'published' : 'updated';
+        setFeedback(`Successfully ${actionLabel} ${data.count} drafts.`);
+        setSelectedIds([]);
+        setBulkConfirm(null);
+        fetchDrafts();
+      } else {
+        setFeedback(data.error || 'Bulk action failed');
+      }
+    } catch {
+      setFeedback('Bulk action failed');
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
 
   const handleCreateBlankDraft = async () => {
     setCreating(true);
@@ -187,6 +240,59 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
         </select>
       </div>
 
+      {/* Bulk Action Toolbar */}
+      {selectedIds.length > 0 && (
+        <div className={styles.bulkToolbar}>
+          <span>{selectedIds.length} drafts selected</span>
+          <div className={styles.bulkActions}>
+            <button
+              className={`${styles.bulkBtn} ${styles.bulkBtnPublish}`}
+              onClick={() =>
+                setBulkConfirm({
+                  action: 'publish',
+                  label: `Publish ${selectedIds.length} selected drafts directly to the live website`,
+                })
+              }
+            >
+              ⚡ Publish Selected ({selectedIds.length})
+            </button>
+            <button
+              className={styles.bulkBtn}
+              onClick={() =>
+                setBulkConfirm({
+                  action: 'approve',
+                  label: `Approve ${selectedIds.length} drafts`,
+                })
+              }
+            >
+              Approve
+            </button>
+            <button
+              className={styles.bulkBtn}
+              onClick={() =>
+                setBulkConfirm({
+                  action: 'review',
+                  label: `Move ${selectedIds.length} drafts to Review`,
+                })
+              }
+            >
+              Mark Review
+            </button>
+            <button
+              className={`${styles.bulkBtn} ${styles.bulkBtnDanger}`}
+              onClick={() =>
+                setBulkConfirm({
+                  action: 'delete',
+                  label: `Permanently delete ${selectedIds.length} drafts`,
+                })
+              }
+            >
+              Delete Drafts
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Quick Filter Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
         {[
@@ -224,6 +330,14 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
         <table className={styles.table}>
           <thead>
             <tr>
+              <th className={styles.th} style={{ width: '36px' }}>
+                <input
+                  type="checkbox"
+                  checked={drafts.length > 0 && selectedIds.length === drafts.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all drafts"
+                />
+              </th>
               <th className={styles.th}>Article Draft</th>
               <th className={styles.th} style={{ width: '130px' }}>Category</th>
               <th className={styles.th} style={{ width: '150px' }}>Author</th>
@@ -237,101 +351,196 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className={styles.emptyState}>
+                <td colSpan={7} className={styles.emptyState}>
                   Loading drafts from editorial database...
                 </td>
               </tr>
             ) : drafts.length === 0 ? (
               <tr>
-                <td colSpan={6} className={styles.emptyState}>
+                <td colSpan={7} className={styles.emptyState}>
                   No drafts found. Click &quot;New Blank Draft&quot; or promote a story from the News Queue.
                 </td>
               </tr>
             ) : (
-              drafts.map((draft) => (
-                <tr key={draft.id} className={styles.tr}>
-                  <td className={styles.td}>
-                    <div>
-                      <Link
-                        href={`/admin/drafts/${draft.id}`}
-                        style={{
-                          fontWeight: 600,
-                          fontSize: '0.9rem',
-                          color: '#171717',
-                        }}
-                      >
-                        {draft.title}
-                      </Link>
-                      <p
+              drafts.map((draft) => {
+                const isSelected = selectedIds.includes(draft.id);
+
+                return (
+                  <tr key={draft.id} className={styles.tr}>
+                    <td className={styles.td}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleSelectItem(draft.id)}
+                        aria-label={`Select ${draft.title}`}
+                      />
+                    </td>
+                    <td className={styles.td}>
+                      <div>
+                        <Link
+                          href={`/admin/drafts/${draft.id}`}
+                          style={{
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            color: '#171717',
+                          }}
+                        >
+                          {draft.title}
+                        </Link>
+                        <p
+                          style={{
+                            fontSize: '0.75rem',
+                            color: '#777',
+                            marginTop: '2px',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 1,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          /{draft.category?.slug || 'news'}/{draft.slug}
+                        </p>
+                      </div>
+                    </td>
+                    <td className={styles.td}>
+                      <span
                         style={{
                           fontSize: '0.75rem',
-                          color: '#777',
-                          marginTop: '2px',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 1,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          color: 'var(--color-accent, #1a3a8b)',
                         }}
                       >
-                        /{draft.category?.slug || 'news'}/{draft.slug}
-                      </p>
-                    </div>
-                  </td>
-                  <td className={styles.td}>
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        color: 'var(--color-accent, #1a3a8b)',
-                      }}
-                    >
-                      {draft.category?.name || 'General'}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <span style={{ fontSize: '0.8rem', color: '#444' }}>
-                      {draft.authorName}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <span style={{ fontSize: '0.75rem', color: '#777' }}>
-                      {formatRelativeTime(draft.updatedAt)}
-                    </span>
-                  </td>
-                  <td className={styles.td}>
-                    <span
-                      className={`${styles.statusBadge} ${
-                        styles[`badge${draft.status}`] || styles.badgeDRAFT
-                      }`}
-                    >
-                      {draft.status}
-                    </span>
-                  </td>
-                  <td className={styles.td} style={{ textAlign: 'right' }}>
-                    <div className={styles.actionsCell}>
-                      <Link
-                        href={`/admin/drafts/${draft.id}`}
-                        className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+                        {draft.category?.name || 'General'}
+                      </span>
+                    </td>
+                    <td className={styles.td}>
+                      <span style={{ fontSize: '0.8rem', color: '#444' }}>
+                        {draft.authorName}
+                      </span>
+                    </td>
+                    <td className={styles.td}>
+                      <span style={{ fontSize: '0.75rem', color: '#777' }}>
+                        {formatRelativeTime(draft.updatedAt)}
+                      </span>
+                    </td>
+                    <td className={styles.td}>
+                      <span
+                        className={`${styles.statusBadge} ${
+                          styles[`badge${draft.status}`] || styles.badgeDRAFT
+                        }`}
                       >
-                        <FileEdit size={13} style={{ display: 'inline', marginRight: '3px' }} />
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => setDeleteDraftId(draft.id)}
-                        className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                        title="Delete draft"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {draft.status}
+                      </span>
+                    </td>
+                    <td className={styles.td} style={{ textAlign: 'right' }}>
+                      <div className={styles.actionsCell}>
+                        <Link
+                          href={`/admin/drafts/${draft.id}`}
+                          className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+                        >
+                          <FileEdit size={13} style={{ display: 'inline', marginRight: '3px' }} />
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => setDeleteDraftId(draft.id)}
+                          className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                          title="Delete draft"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Bulk Action Confirmation Modal */}
+      {bulkConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            zIndex: 60,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+          }}
+          onClick={() => setBulkConfirm(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#fff',
+              borderRadius: '6px',
+              padding: '1.5rem',
+              maxWidth: '440px',
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#171717' }}>
+              Confirm Bulk Action
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#666', lineHeight: 1.5 }}>
+              Are you sure you want to {bulkConfirm.label.toLowerCase()}?
+              {bulkConfirm.action === 'publish' && (
+                <span style={{ display: 'block', marginTop: '0.5rem', color: '#166534', fontWeight: 500 }}>
+                  This will make all {selectedIds.length} selected articles live on the public site immediately.
+                </span>
+              )}
+              {bulkConfirm.action === 'delete' && (
+                <span style={{ display: 'block', marginTop: '0.5rem', color: '#c0392b', fontWeight: 500 }}>
+                  These drafts will be permanently deleted from the database.
+                </span>
+              )}
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+              <button
+                className={styles.bulkBtn}
+                onClick={() => setBulkConfirm(null)}
+                disabled={bulkProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                className={`${styles.bulkBtn} ${
+                  bulkConfirm.action === 'delete'
+                    ? styles.bulkBtnDanger
+                    : bulkConfirm.action === 'publish'
+                    ? styles.bulkBtnPublish
+                    : ''
+                }`}
+                onClick={handleBulkActionExecute}
+                disabled={bulkProcessing}
+                style={{
+                  backgroundColor:
+                    bulkConfirm.action === 'delete'
+                      ? '#c0392b'
+                      : bulkConfirm.action === 'publish'
+                      ? '#166534'
+                      : 'var(--color-accent, #1a3a8b)',
+                  color: '#ffffff',
+                }}
+              >
+                {bulkProcessing
+                  ? 'Processing...'
+                  : bulkConfirm.action === 'publish'
+                  ? 'Confirm & Publish'
+                  : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteDraftId && (

@@ -57,7 +57,7 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
   // Bulk actions state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmAction, setConfirmAction] = useState<{
-    action: 'review' | 'approve' | 'reject' | 'archive';
+    action: 'publish' | 'review' | 'approve' | 'reject' | 'archive';
     label: string;
   } | null>(null);
   const [processing, setProcessing] = useState(false);
@@ -299,6 +299,17 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
           <div className={styles.bulkToolbar}>
             <span>{selectedIds.length} stories selected</span>
             <div className={styles.bulkActions}>
+              <button
+                className={`${styles.bulkBtn} ${styles.bulkBtnPublish}`}
+                onClick={() =>
+                  setConfirmAction({
+                    action: 'publish',
+                    label: `Publish ${selectedIds.length} selected stories directly to the public website`,
+                  })
+                }
+              >
+                ⚡ Publish Selected ({selectedIds.length})
+              </button>
               <button
                 className={styles.bulkBtn}
                 onClick={() =>
@@ -583,6 +594,11 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
                   Rejected stories will be moved out of the active review queue.
                 </span>
               )}
+              {confirmAction.action === 'publish' && (
+                <span style={{ display: 'block', marginTop: '0.5rem', color: '#166534', fontWeight: 500 }}>
+                  This will immediately publish the selected stories to the homepage and category feeds.
+                </span>
+              )}
             </p>
             <div className={styles.modalFooter}>
               <button
@@ -594,17 +610,29 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
               </button>
               <button
                 className={`${styles.bulkBtn} ${
-                  confirmAction.action === 'reject' ? styles.bulkBtnDanger : ''
+                  confirmAction.action === 'reject'
+                    ? styles.bulkBtnDanger
+                    : confirmAction.action === 'publish'
+                    ? styles.bulkBtnPublish
+                    : ''
                 }`}
                 onClick={handleBulkActionExecute}
                 disabled={processing}
                 style={{
                   backgroundColor:
-                    confirmAction.action === 'reject' ? '#c0392b' : 'var(--color-accent, #1a3a8b)',
+                    confirmAction.action === 'reject'
+                      ? '#c0392b'
+                      : confirmAction.action === 'publish'
+                      ? '#166534'
+                      : 'var(--color-accent, #1a3a8b)',
                   color: '#ffffff',
                 }}
               >
-                {processing ? 'Processing...' : 'Confirm'}
+                {processing
+                  ? 'Processing...'
+                  : confirmAction.action === 'publish'
+                  ? 'Confirm & Publish'
+                  : 'Confirm'}
               </button>
             </div>
           </div>

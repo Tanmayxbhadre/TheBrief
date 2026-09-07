@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAdminSession, recordActivity } from '@/lib/auth';
+import { revalidateNewsPublication } from '@/lib/cache/revalidateNews';
 import { Prisma } from '@prisma/client';
+import slugify from 'slugify';
 
 export async function GET(request: Request) {
   try {
@@ -118,12 +120,101 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No news items selected' }, { status: 400 });
     }
 
-    // Explicitly reject bulk publish attempts
+    // Handle Bulk Publishing
     if (action === 'publish' || action === 'PUBLISHED') {
-      return NextResponse.json(
-        { error: 'Bulk publishing is not permitted for editorial safety.' },
-        { status: 403 }
+      const items = await prisma.newsItem.findMany({
+        where: { id: { in: ids } },
+        include: {
+          source: true,
+          category: true,
+          drafts: true,
+        },
+      });
+
+      let publishedCount = 0;
+      const revalidationPromises: Promise<void>[] = [];
+
+      for (const item of items) {
+        let publishedSlug = '';
+        const categorySlug = item.category?.slug || 'general';
+
+        if (item.drafts && item.drafts.length > 0) {
+          const draft = item.drafts[0];
+          publishedSlug = draft.slug;
+
+          await prisma.articleDraft.update({
+            where: { id: draft.id },
+            data: {
+              status: 'PUBLISHED',
+              publishedAt: draft.publishedAt || new Date(),
+              content: draft.content?.trim() || `## What Happened\n\n${item.description || item.title}\n\n## Key Details\n\nOriginal reporting and verification provided by ${item.source.name}.\n\n## Why It Matters\n\nFollow THE BRIEF for ongoing editorial updates and verified global coverage.`,
+              excerpt: draft.excerpt?.trim() || item.description || item.title,
+              authorName: draft.authorName || session.user || 'THE BRIEF Editorial Desk',
+              seoTitle: draft.seoTitle || `${item.title} — THE BRIEF`,
+              metaDescription: draft.metaDescription || (item.description || item.title).slice(0, 155),
+              sources: draft.sources || JSON.stringify([{ name: item.source.name, url: item.originalUrl }]),
+              quickSummary: draft.quickSummary || JSON.stringify([item.title, `Original coverage by ${item.source.name}`]),
+            },
+          });
+        } else {
+          // Generate unique slug
+          const baseSlug = slugify(item.title, { lower: true, strict: true, trim: true }) || `news-item-${Date.now()}`;
+          let slug = baseSlug;
+          let counter = 1;
+          while (await prisma.articleDraft.findUnique({ where: { slug } })) {
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+          }
+          publishedSlug = slug;
+
+          await prisma.articleDraft.create({
+            data: {
+              newsItemId: item.id,
+              title: item.title,
+              slug,
+              excerpt: item.description || item.title,
+              content: `## What Happened\n\n${item.description || item.title}\n\n## Key Details\n\nOriginal reporting provided by ${item.source.name}.\n\n## Why It Matters\n\nFollow THE BRIEF for real-time journalistic verification and in-depth reporting.`,
+              categoryId: item.categoryId || null,
+              authorName: session.user || 'THE BRIEF Editorial Desk',
+              featuredImage: item.imageUrl || '',
+              imageAlt: item.imageAlt || item.title,
+              status: 'PUBLISHED',
+              publishedAt: item.publishedAt || new Date(),
+              seoTitle: `${item.title} — THE BRIEF`,
+              metaDescription: (item.description || item.title).slice(0, 155),
+              sources: JSON.stringify([{ name: item.source.name, url: item.originalUrl }]),
+              quickSummary: JSON.stringify([item.title, `Original reporting by ${item.source.name}`]),
+              tags: JSON.stringify(['News', item.category?.name || 'General']),
+            },
+          });
+        }
+
+        // Update news item status to PUBLISHED
+        await prisma.newsItem.update({
+          where: { id: item.id },
+          data: { status: 'PUBLISHED' },
+        });
+
+        publishedCount++;
+        revalidationPromises.push(
+          revalidateNewsPublication({ categorySlug, slug: publishedSlug })
+        );
+      }
+
+      await Promise.all(revalidationPromises);
+
+      await recordActivity(
+        'bulk_news_publish',
+        `${publishedCount} articles`,
+        `Batch published ${publishedCount} news items directly to the public website`,
+        session.user || 'Admin'
       );
+
+      return NextResponse.json({
+        success: true,
+        count: publishedCount,
+        status: 'PUBLISHED',
+      });
     }
 
     let newStatus: string;

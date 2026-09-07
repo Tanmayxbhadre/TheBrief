@@ -95,6 +95,68 @@
   cursor: pointer;
 }
 
+.bulkToolbar {
+  background-color: var(--color-accent-light, #e8edf8);
+  border: 1px solid rgba(26, 58, 139, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-accent, #1a3a8b);
+  font-weight: 600;
+  gap: 1rem;
+}
+
+.bulkActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulkBtn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 3px;
+  border: 1px solid var(--color-border, #e6e6e3);
+  background-color: #ffffff;
+  color: var(--color-text, #171717);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bulkBtn:hover {
+  border-color: var(--color-accent, #1a3a8b);
+  color: var(--color-accent, #1a3a8b);
+}
+
+.bulkBtnPublish {
+  background-color: #166534;
+  border-color: #14532d;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.bulkBtnPublish:hover {
+  background-color: #15803d;
+  border-color: #166534;
+  color: #ffffff;
+}
+
+.bulkBtnDanger {
+  color: #c0392b;
+}
+
+.bulkBtnDanger:hover {
+  background-color: #fdf2f1;
+  border-color: #f8d7da;
+  color: #c0392b;
+}
+
 .tableCard {
   background-color: #ffffff;
   border: 1px solid var(--color-border, #e6e6e3);
