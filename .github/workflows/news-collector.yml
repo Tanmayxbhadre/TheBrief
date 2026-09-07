@@ -14,8 +14,8 @@ jobs:
       - name: Send Cron Webhook
         run: |
           if [ -z "${{ secrets.CRON_SECRET }}" ]; then
-            echo "Error: CRON_SECRET repository secret is missing."
-            exit 1
+            echo "Warning: CRON_SECRET repository secret is missing. Skipping scheduled news collection."
+            exit 0
           fi
           
           SITE_URL="${{ secrets.SITE_URL }}"
