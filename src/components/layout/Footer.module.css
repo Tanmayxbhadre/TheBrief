@@ -3,12 +3,12 @@
 .footer {
   background: var(--color-bg-secondary);
   border-top: 1px solid var(--color-border);
-  margin-top: var(--space-20);
+  /* Removed large margin-top to avoid double spacing since pages pad bottom */
 }
 
 .inner {
-  padding-top: var(--space-16);
-  padding-bottom: var(--space-8);
+  padding-top: var(--space-10);
+  padding-bottom: var(--space-6);
 }
 
 /* ── Grid ── */
@@ -16,8 +16,8 @@
 .grid {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr;
-  gap: var(--space-12);
-  padding-bottom: var(--space-12);
+  gap: var(--space-10);
+  padding-bottom: var(--space-8);
   border-bottom: 1px solid var(--color-border);
 }
 

@@ -1,15 +1,15 @@
 /* category.module.css */
 
 .page {
-  padding: var(--space-10) 0 var(--space-20);
+  padding: var(--space-8) 0 var(--space-12);
 }
 
 /* ── Page Header ── */
 
 .pageHeader {
-  padding: var(--space-8) 0 var(--space-8);
+  padding: var(--space-6) 0;
   border-bottom: 2px solid var(--color-text);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-6);
 }
 
 .categoryTitle {
@@ -47,7 +47,7 @@
 }
 
 .featuredImageWrapper:hover img {
-  transform: scale(1.02);
+  transform: scale(1.015);
 }
 
 .featuredImageWrapper img {
@@ -115,7 +115,7 @@
 }
 
 .cardImageWrapper:hover img {
-  transform: scale(1.02);
+  transform: scale(1.015);
 }
 
 .cardImageWrapper img {
@@ -178,6 +178,10 @@
 }
 
 @media (max-width: 767px) {
+  .page {
+    padding-bottom: var(--space-8);
+  }
+  
   .grid {
     grid-template-columns: 1fr;
   }

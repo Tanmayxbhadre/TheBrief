@@ -49,7 +49,7 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
   // Filters
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('all');
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState('queue');
   const [sourceId, setSourceId] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [sort, setSort] = useState('newest_discovered');
@@ -222,11 +222,12 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
               setPage(1);
             }}
           >
-            <option value="all">Status: All</option>
+            <option value="queue">Queue (Active)</option>
             <option value="discovered">Discovered (New)</option>
             <option value="review">In Review</option>
             <option value="approved">Approved</option>
             <option value="draft">Draft Created</option>
+            <option value="all">All Statuses</option>
             <option value="published">Published</option>
             <option value="rejected">Rejected</option>
             <option value="archived">Archived</option>

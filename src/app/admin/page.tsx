@@ -22,6 +22,7 @@ export default async function AdminDashboardPage() {
   const [
     newStoriesCount,
     reviewCount,
+    approvedNewsCount,
     draftsCount,
     publishedCount,
     publishedTodayCount,
@@ -33,6 +34,7 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     prisma.newsItem.count({ where: { status: 'DISCOVERED' } }),
     prisma.newsItem.count({ where: { status: 'REVIEW' } }),
+    prisma.newsItem.count({ where: { status: 'APPROVED' } }),
     prisma.articleDraft.count({
       where: { status: { in: ['DRAFT', 'REVIEW', 'APPROVED'] } },
     }),
@@ -92,7 +94,15 @@ export default async function AdminDashboardPage() {
             <Eye size={18} className={styles.statIcon} />
           </div>
           <span className={styles.statValue}>{reviewCount}</span>
-          <span className={styles.statSub}>Assigned to editors</span>
+          <span className={styles.statSub}>
+            {approvedNewsCount > 0 ? (
+              <Link href="/admin/news?status=approved" style={{ color: 'var(--color-accent)' }}>
+                {approvedNewsCount} approved →
+              </Link>
+            ) : (
+              'Assigned to editors'
+            )}
+          </span>
         </div>
 
         <div className={styles.statCard}>

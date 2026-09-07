@@ -126,26 +126,73 @@ export async function getHomepageData(): Promise<HomepageData> {
       };
     });
 
-    // 4. Determine Hero Story (Primary + 3 Secondary)
+    // ── Deduplication Allocator ─────────────────────────────────────────────
+    // Tracks every identity token that has already been reserved.
+    // Identity strength: Article ID > StoryCluster ID > canonical URL > slug
+    const usedIds = new Set<string>();
+
+    /** Returns true and marks the article reserved if it has not been seen before. */
+    function reserve(article: Article): boolean {
+      // Build identity tokens from strongest to weakest.
+      // Article has no `url` field; canonical path = category/slug.
+      const tokens: string[] = [article.id];
+      const storyClusterId = (article as { storyClusterId?: string }).storyClusterId;
+      if (storyClusterId) tokens.push(`cluster:${storyClusterId}`);
+      tokens.push(`path:${article.category.slug}/${article.slug}`);
+      tokens.push(`slug:${article.slug}`);
+
+      // If ANY token is already used → this is a duplicate
+      for (const t of tokens) {
+        if (usedIds.has(t)) return false;
+      }
+
+      // Mark all tokens as used
+      for (const t of tokens) usedIds.add(t);
+      return true;
+    }
+
+    /** Pick up to `limit` articles from `pool`, reserving each one. */
+    function allocate(pool: Article[], limit: number): Article[] {
+      const result: Article[] = [];
+      for (const article of pool) {
+        if (result.length >= limit) break;
+        if (reserve(article)) result.push(article);
+      }
+      return result;
+    }
+
+    // ── Allocation order: Breaking → Hero → Secondary → Latest → Trending → Categories
+    // (Breaking news bar was already selected above; reserve it so it doesn't
+    //  appear again in other sections.)
+    if (breakingItem) {
+      const breakingArticle = allAvailable.find((a) => a.id === breakingItem!.id);
+      if (breakingArticle) reserve(breakingArticle);
+    }
+
+    // 4. Hero Story (highest priority-score)
     const rankedForHero = [...scoredArticles].sort((a, b) => b.priorityScore - a.priorityScore);
-    const featured = rankedForHero[0]?.article || allAvailable[0];
-    const secondary = rankedForHero
-      .filter((item) => item.article.id !== featured.id)
-      .slice(0, 3)
-      .map((item) => item.article);
+    const heroPool = rankedForHero.map((s) => s.article);
+    const [featured] = allocate(heroPool, 1);
+    const effectiveFeatured = featured || allAvailable[0];
+    // Reserve fallback if allocate returned nothing (empty DB → mock)
+    if (!featured && effectiveFeatured) reserve(effectiveFeatured);
 
-    // 5. Latest News (Strictly Chronological by publishedAt)
-    const latestArticles = [...allAvailable]
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-      .slice(0, 8);
+    // 5. Secondary (next 3 by priority, not already reserved)
+    const secondary = allocate(heroPool, 3);
 
-    // 6. Trending News (Ranked by Trending Score)
-    const trendingArticles = [...scoredArticles]
+    // 6. Latest News (chronological, not already reserved)
+    const chronological = [...allAvailable].sort(
+      (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    );
+    const latestArticles = allocate(chronological, 8);
+
+    // 7. Trending News (by trending score, not already reserved)
+    const trendingPool = [...scoredArticles]
       .sort((a, b) => b.trendingScore - a.trendingScore)
-      .slice(0, 5)
-      .map((item) => item.article);
+      .map((s) => s.article);
+    const trendingArticles = allocate(trendingPool, 5);
 
-    // 7. Category Sections
+    // 8. Category Sections (per-category, not already reserved)
     const targetCategories = [
       'technology',
       'india',
@@ -161,15 +208,16 @@ export async function getHomepageData(): Promise<HomepageData> {
     const categoryArticles: Record<string, Article[]> = {};
 
     for (const catSlug of targetCategories) {
-      // Real published articles for this category
       const matchedDb = dbArticles.filter(
         (a) => a.category.slug.toLowerCase() === catSlug.toLowerCase()
       );
 
       if (matchedDb.length > 0) {
-        categoryArticles[catSlug] = matchedDb.slice(0, 4);
+        // Allocate from real DB articles for this category (deduplication-aware)
+        categoryArticles[catSlug] = allocate(matchedDb, 4);
       } else {
-        // Fallback to mock category items if no DB articles exist for this category
+        // Fallback to mock category items; mock articles don't participate in
+        // global dedup so we slice without reserving (they're static placeholders)
         const matchedMock = mockArticles.filter(
           (a) => a.category.slug.toLowerCase() === catSlug.toLowerCase()
         );
@@ -179,7 +227,7 @@ export async function getHomepageData(): Promise<HomepageData> {
 
     return {
       breakingItem,
-      featured,
+      featured: effectiveFeatured,
       secondary,
       latestArticles,
       trendingArticles,

@@ -68,7 +68,7 @@ export default async function DailyNewsPage({ searchParams }: Props) {
                   </h3>
                   <p className={styles.storyDesc}>{story.excerpt}</p>
                   {story.sourcesCount && story.sourcesCount > 1 && (
-                    <span style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 600 }}>
+                    <span className={styles.sourcesCount}>
                       ⚡ Cross-verified across {story.sourcesCount} sources
                     </span>
                   )}
@@ -89,7 +89,7 @@ export default async function DailyNewsPage({ searchParams }: Props) {
                     <span className={styles.missedBullet}>•</span>
                     <div>
                       <strong>{item.category}:</strong>{' '}
-                      <Link href={item.url} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      <Link href={item.url} className={styles.missedLink}>
                         {item.summaryPoint}
                       </Link>
                     </div>
@@ -104,46 +104,16 @@ export default async function DailyNewsPage({ searchParams }: Props) {
         {Object.keys(content.categoryRoundup).length > 0 && (
           <section className={styles.section} aria-label="Sector Rundowns">
             <h2 className="section-heading">Sector Rundowns</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem', marginTop: '1rem' }}>
+            <div className={styles.roundupGrid}>
               {Object.entries(content.categoryRoundup).map(([catSlug, items]) => (
-                <div
-                  key={catSlug}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '8px',
-                    padding: '1.25rem',
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontSize: '0.875rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      color: 'var(--color-accent, #0284c7)',
-                      letterSpacing: '0.04em',
-                      margin: '0 0 0.75rem',
-                      borderBottom: '1px solid #f1f5f9',
-                      paddingBottom: '0.5rem',
-                    }}
-                  >
+                <div key={catSlug} className={styles.roundupCard}>
+                  <h3 className={styles.roundupCatLabel}>
                     {catSlug}
                   </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div className={styles.roundupItemList}>
                     {items.map((item) => (
                       <div key={item.id}>
-                        <Link
-                          href={item.url}
-                          style={{
-                            fontWeight: 600,
-                            fontSize: '0.9375rem',
-                            color: 'var(--color-text)',
-                            textDecoration: 'none',
-                            lineHeight: 1.4,
-                            display: 'block',
-                            marginBottom: '2px',
-                          }}
-                        >
+                        <Link href={item.url} className={styles.roundupLink}>
                           {item.title}
                         </Link>
                       </div>

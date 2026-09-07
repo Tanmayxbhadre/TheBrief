@@ -14,12 +14,13 @@ export async function GET(request: Request) {
 
     const where: Prisma.ArticleDraftWhereInput = {};
 
-    if (status && status !== 'all' && status !== 'all_drafts') {
+    if (status && status !== 'all' && status !== 'all_drafts' && status !== 'any') {
       where.status = status.toUpperCase();
-    } else if (status === 'all') {
-      // no status filter: return everything across all statuses
+    } else if (status === 'any') {
+      // Truly unrestricted — returns every record (admin debug use)
     } else {
-      // Default / all_drafts: return active editorial drafts only (not published/archived)
+      // Default / 'all' / 'all_drafts': return active editorial pipeline only
+      // Never show PUBLISHED, REJECTED, or ARCHIVED in the Drafts work queue
       where.status = { in: ['DRAFT', 'REVIEW', 'APPROVED'] };
     }
 

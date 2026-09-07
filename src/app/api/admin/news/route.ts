@@ -19,9 +19,15 @@ export async function GET(request: Request) {
     const where: Prisma.NewsItemWhereInput = {};
 
     // Status filter
-    if (status && status !== 'all') {
+    // Default (no param or 'queue'): show only actionable editorial states — exclude
+    // PUBLISHED, REJECTED, ARCHIVED since those require no newsroom action.
+    // 'all' is an explicit override that returns every record.
+    if (!status || status === 'queue') {
+      where.status = { notIn: ['PUBLISHED', 'REJECTED', 'ARCHIVED'] };
+    } else if (status !== 'all') {
       where.status = status.toUpperCase();
     }
+    // status === 'all' → no filter (full visibility)
 
     // Category filter
     if (category && category !== 'all') {

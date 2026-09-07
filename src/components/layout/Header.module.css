@@ -1,5 +1,7 @@
 /* Header.module.css */
 
+/* ── Base ── */
+
 .header {
   position: fixed;
   top: 0;
@@ -7,17 +9,18 @@
   right: 0;
   z-index: 100;
   height: var(--header-height);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  /* ALWAYS fully opaque — eliminates the content bleed-through on scroll */
+  background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
-  transition: box-shadow var(--transition-base), background-color var(--transition-base);
+  /* No backdrop-filter, no rgba — these cause content to show through */
+  transition: box-shadow var(--transition-base);
 }
 
 .header.scrolled {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
 }
+
+/* ── Inner layout ── */
 
 .inner {
   display: flex;
@@ -26,7 +29,7 @@
   gap: var(--space-6);
 }
 
-/* ── Logo ── */
+/* ── Logo / Masthead ── */
 
 .logo {
   flex-shrink: 0;
@@ -36,13 +39,14 @@
 
 .logoText {
   font-family: var(--font-serif);
-  font-size: 1.125rem;
-  letter-spacing: 0.12em;
+  font-size: 1.0625rem;
+  letter-spacing: 0.14em;
   color: var(--color-text);
   font-weight: 400;
+  /* Editorial masthead feel — no bold, no extra weight */
 }
 
-/* ── Navigation ── */
+/* ── Primary Navigation ── */
 
 .nav {
   display: flex;
@@ -53,8 +57,9 @@
 }
 
 .navLink {
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 400;
   color: var(--color-text-secondary);
   padding: var(--space-2) var(--space-3);
   position: relative;
@@ -63,14 +68,15 @@
   white-space: nowrap;
 }
 
+/* Thin underline accent on hover/active */
 .navLink::after {
   content: '';
   position: absolute;
   bottom: -1px;
   left: var(--space-3);
   right: var(--space-3);
-  height: 2px;
-  background: var(--color-accent);
+  height: 1px;
+  background: var(--color-text);
   transform: scaleX(0);
   transition: transform var(--transition-fast);
   transform-origin: left;
@@ -86,15 +92,14 @@
 
 /* Active state */
 .navLinkActive {
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 
 .navLinkActive::after {
   transform: scaleX(1);
-  background: var(--color-accent);
 }
 
-/* ── Actions ── */
+/* ── Right Actions ── */
 
 .actions {
   display: flex;
@@ -107,8 +112,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   transition: color var(--transition-fast), background var(--transition-fast);
@@ -120,7 +125,7 @@
 }
 
 .iconBtnActive {
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 
 .menuToggleBtn {
@@ -129,21 +134,24 @@
   justify-content: center;
 }
 
+/* ── Responsive ── */
+
+/* Hide hamburger on desktop */
 @media (min-width: 1024px) {
   .menuToggleBtn {
     display: none !important;
   }
 }
 
-/* ── Responsive ── */
-
-@media (max-width: 1100px) {
+/* Tighten nav link spacing at mid-range */
+@media (max-width: 1200px) {
   .navLink {
     padding: var(--space-2) var(--space-2);
     font-size: 0.8rem;
   }
 }
 
+/* Hide nav on tablet/mobile — mobile menu takes over */
 @media (max-width: 1023px) {
   .nav {
     display: none;
@@ -152,6 +160,7 @@
 
 @media (max-width: 767px) {
   .logoText {
-    font-size: 1rem;
+    font-size: 0.9375rem;
+    letter-spacing: 0.12em;
   }
 }
