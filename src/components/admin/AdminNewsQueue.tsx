@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
 import styles from './AdminNewsQueue.module.css';
+import { notifyNewsPublished } from '@/lib/broadcast';
 
 interface NewsItemWithRelations {
   id: string;
@@ -151,6 +152,9 @@ export function AdminNewsQueue({ initialCategories, initialSources }: AdminNewsQ
 
       const data = await res.json();
       if (res.ok) {
+        if (confirmAction.action === 'publish') {
+          notifyNewsPublished();
+        }
         showFeedback(`Successfully updated ${data.count} stories.`);
         setSelectedIds([]);
         setConfirmAction(null);

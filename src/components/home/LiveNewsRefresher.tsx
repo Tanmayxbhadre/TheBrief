@@ -10,15 +10,14 @@ interface LiveNewsRefresherProps {
 }
 
 /**
- * Lightweight Client-Side Live News Refresher
- * Periodically checks the lightweight /api/news/version endpoint (every 60 seconds).
- * When new published news is detected or when the tab becomes active after inactivity,
- * triggers Next.js router.refresh() to update the Server Component homepage seamlessly.
+ * High-Performance Client-Side Live News Refresher
+ * Listens for cross-tab publication broadcasts, monitors visibility changes,
+ * and polls the lightweight /api/news/version endpoint to seamlessly update the homepage.
  */
 export default function LiveNewsRefresher({
   initialLatestPublishedAt,
   initialLatestArticleId,
-  intervalMs = 60000,
+  intervalMs = 15000,
 }: LiveNewsRefresherProps) {
   const router = useRouter();
   const lastKnownRef = useRef<{
@@ -39,8 +38,12 @@ export default function LiveNewsRefresher({
   useEffect(() => {
     let isMounted = true;
 
+    const refreshNews = () => {
+      if (!isMounted) return;
+      router.refresh();
+    };
+
     const checkNewsVersion = async () => {
-      // Avoid network traffic if browser is offline or tab is hidden
       if (!navigator.onLine || document.visibilityState === 'hidden') {
         return;
       }
@@ -62,7 +65,6 @@ export default function LiveNewsRefresher({
         const currentPublishedAt = lastKnownRef.current.publishedAt;
         const currentArticleId = lastKnownRef.current.articleId;
 
-        // Check if a new article was published or the latest article changed
         const hasNewArticle =
           (serverArticleId && serverArticleId !== currentArticleId) ||
           (serverPublishedAt && serverPublishedAt !== currentPublishedAt);
@@ -72,19 +74,40 @@ export default function LiveNewsRefresher({
             publishedAt: serverPublishedAt,
             articleId: serverArticleId,
           };
-
-          // Seamless server component refresh (preserves scroll position & form states)
-          router.refresh();
+          refreshNews();
         }
       } catch {
-        // Silently ignore network check errors to prevent console spam
+        // Silently ignore network check errors
       }
     };
 
-    // 1. Recurring timer (default: every 60s)
+    // 1. Cross-tab Broadcast Channel for instantaneous updates
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        channel = new BroadcastChannel('thebrief_news_channel');
+        channel.onmessage = (event) => {
+          if (event.data?.type === 'NEWS_PUBLISHED') {
+            checkNewsVersion();
+            refreshNews();
+          }
+        };
+      }
+    } catch {}
+
+    // 2. Storage event listener fallback for cross-tab sync
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'thebrief_last_published') {
+        checkNewsVersion();
+        refreshNews();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // 3. Recurring periodic poll
     const interval = setInterval(checkNewsVersion, intervalMs);
 
-    // 2. Smart refresh on tab focus / visibility change
+    // 4. Smart refresh on tab focus / visibility change
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         checkNewsVersion();
@@ -97,11 +120,12 @@ export default function LiveNewsRefresher({
     return () => {
       isMounted = false;
       clearInterval(interval);
+      if (channel) channel.close();
+      window.removeEventListener('storage', handleStorage);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', checkNewsVersion);
     };
   }, [router, intervalMs]);
 
-  // Non-visual component
   return null;
 }

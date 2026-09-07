@@ -15,7 +15,43 @@ export interface HomepageData {
 }
 
 /**
- * Deterministic scoring algorithm for selecting the Hero and Trending stories
+ * Normalizes title into significant keywords for similarity checking
+ */
+function getHeadlineKeywords(title: string): Set<string> {
+  const stopWords = new Set([
+    'a', 'an', 'the', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'is', 'are', 'was', 'were',
+    'says', 'amid', 'over', 'with', 'by', 'after', 'from', 'into', 'its', 'their', 'new', 'as', 'about',
+    'have', 'has', 'had', 'been', 'will', 'would', 'could', 'should', 'more', 'than', 'this', 'that'
+  ]);
+  const words = (title || '')
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w));
+  return new Set(words);
+}
+
+/**
+ * Checks if two headlines are reporting on the same event/story
+ */
+function areTitlesSimilar(title1: string, title2: string): boolean {
+  if (!title1 || !title2) return false;
+  if (title1.toLowerCase() === title2.toLowerCase()) return true;
+
+  const set1 = getHeadlineKeywords(title1);
+  const set2 = getHeadlineKeywords(title2);
+  if (set1.size === 0 || set2.size === 0) return false;
+
+  let intersection = 0;
+  for (const w of set1) {
+    if (set2.has(w)) intersection++;
+  }
+  const minSize = Math.min(set1.size, set2.size);
+  return (intersection / minSize >= 0.5) || (intersection >= 4);
+}
+
+/**
+ * Deterministic scoring algorithm for selecting Hero and Trending stories
  */
 function calculateStoryPriority(
   article: Article,
@@ -32,12 +68,12 @@ function calculateStoryPriority(
   const pubTime = new Date(article.publishedAt).getTime();
   const ageHours = Math.max(0, (Date.now() - pubTime) / (1000 * 60 * 60));
 
-  // Freshness component (favor stories within last 24-48 hours)
+  // Freshness component (strongly favor stories within last 24-48 hours)
   let freshnessBonus = 0;
-  if (ageHours <= 6) freshnessBonus = 30;
-  else if (ageHours <= 18) freshnessBonus = 20;
-  else if (ageHours <= 36) freshnessBonus = 10;
-  else if (ageHours <= 72) freshnessBonus = 5;
+  if (ageHours <= 6) freshnessBonus = 40;
+  else if (ageHours <= 18) freshnessBonus = 25;
+  else if (ageHours <= 36) freshnessBonus = 15;
+  else if (ageHours <= 72) freshnessBonus = 8;
 
   const priorityScore =
     (article.featured ? 40 : 0) +
@@ -54,11 +90,12 @@ function calculateStoryPriority(
 /**
  * Centralized Homepage Data Fetcher:
  * Queries all PUBLISHED database articles, applies deterministic intelligence ranking,
- * and provides fallback mock content only when database content is not yet available.
+ * deduplicates similar topics in top spots, and ensures old/aging stories gracefully
+ * flow into their respective category sections.
  */
 export async function getHomepageData(): Promise<HomepageData> {
   try {
-    // 1. Fetch all PUBLISHED articles from Database
+    // 1. Fetch all PUBLISHED articles from Database (up to 200 for rich category archives)
     const dbDrafts = await prisma.articleDraft.findMany({
       where: {
         status: 'PUBLISHED',
@@ -69,7 +106,7 @@ export async function getHomepageData(): Promise<HomepageData> {
       orderBy: {
         publishedAt: 'desc',
       },
-      take: 50,
+      take: 200,
     });
 
     const dbArticles = dbDrafts.map(draftToArticle);
@@ -89,7 +126,6 @@ export async function getHomepageData(): Promise<HomepageData> {
     const breakingCandidate = dbDrafts.find((d) => d.breaking);
 
     if (breakingCandidate) {
-      // Check freshness (only within last 48 hours)
       const ageHours =
         (Date.now() - new Date(breakingCandidate.publishedAt || breakingCandidate.createdAt).getTime()) /
         (1000 * 60 * 60);
@@ -108,7 +144,6 @@ export async function getHomepageData(): Promise<HomepageData> {
         };
       }
     } else if (!hasDbArticles) {
-      // If DB has 0 items, fallback to mock breaking news
       breakingItem = getMockBreakingNews() || null;
     }
 
@@ -126,73 +161,107 @@ export async function getHomepageData(): Promise<HomepageData> {
       };
     });
 
-    // ── Deduplication Allocator ─────────────────────────────────────────────
-    // Tracks every identity token that has already been reserved.
-    // Identity strength: Article ID > StoryCluster ID > canonical URL > slug
+    // ── Global Identity Tracker ──────────────────────────────────────────────
     const usedIds = new Set<string>();
 
-    /** Returns true and marks the article reserved if it has not been seen before. */
-    function reserve(article: Article): boolean {
-      // Build identity tokens from strongest to weakest.
-      // Article has no `url` field; canonical path = category/slug.
-      const tokens: string[] = [article.id];
-      const storyClusterId = (article as { storyClusterId?: string }).storyClusterId;
-      if (storyClusterId) tokens.push(`cluster:${storyClusterId}`);
-      tokens.push(`path:${article.category.slug}/${article.slug}`);
-      tokens.push(`slug:${article.slug}`);
-
-      // If ANY token is already used → this is a duplicate
-      for (const t of tokens) {
-        if (usedIds.has(t)) return false;
-      }
-
-      // Mark all tokens as used
-      for (const t of tokens) usedIds.add(t);
-      return true;
+    function isExactDuplicate(article: Article): boolean {
+      if (usedIds.has(article.id)) return true;
+      if (usedIds.has(`slug:${article.slug}`)) return true;
+      if (usedIds.has(`path:${article.category.slug}/${article.slug}`)) return true;
+      const clusterId = (article as { storyClusterId?: string }).storyClusterId;
+      if (clusterId && usedIds.has(`cluster:${clusterId}`)) return true;
+      return false;
     }
 
-    /** Pick up to `limit` articles from `pool`, reserving each one. */
-    function allocate(pool: Article[], limit: number): Article[] {
-      const result: Article[] = [];
-      for (const article of pool) {
-        if (result.length >= limit) break;
-        if (reserve(article)) result.push(article);
-      }
-      return result;
+    function markUsed(article: Article) {
+      usedIds.add(article.id);
+      usedIds.add(`slug:${article.slug}`);
+      usedIds.add(`path:${article.category.slug}/${article.slug}`);
+      const clusterId = (article as { storyClusterId?: string }).storyClusterId;
+      if (clusterId) usedIds.add(`cluster:${clusterId}`);
     }
 
-    // ── Allocation order: Breaking → Hero → Secondary → Latest → Trending → Categories
-    // (Breaking news bar was already selected above; reserve it so it doesn't
-    //  appear again in other sections.)
+    // Reserve breaking item if present
     if (breakingItem) {
-      const breakingArticle = allAvailable.find((a) => a.id === breakingItem!.id);
-      if (breakingArticle) reserve(breakingArticle);
+      const breakingArt = allAvailable.find((a) => a.id === breakingItem!.id);
+      if (breakingArt) markUsed(breakingArt);
     }
 
-    // 4. Hero Story (highest priority-score)
-    const rankedForHero = [...scoredArticles].sort((a, b) => b.priorityScore - a.priorityScore);
-    const heroPool = rankedForHero.map((s) => s.article);
-    const [featured] = allocate(heroPool, 1);
-    const effectiveFeatured = featured || allAvailable[0];
-    // Reserve fallback if allocate returned nothing (empty DB → mock)
-    if (!featured && effectiveFeatured) reserve(effectiveFeatured);
+    // 4. Hero Featured Story (Highest priority score)
+    const rankedByPriority = [...scoredArticles].sort((a, b) => b.priorityScore - a.priorityScore);
+    const heroPool = rankedByPriority.map((s) => s.article);
 
-    // 5. Secondary (next 3 by priority, not already reserved)
-    const secondary = allocate(heroPool, 3);
+    let featured: Article = allAvailable[0];
+    for (const cand of heroPool) {
+      if (!isExactDuplicate(cand)) {
+        featured = cand;
+        markUsed(cand);
+        break;
+      }
+    }
 
-    // 6. Latest News (chronological, not already reserved)
+    // 5. Hero Secondary Stories (Top 3 distinct stories)
+    // Rules:
+    // - No exact duplicates
+    // - No similar headlines to Featured story or to each other
+    // - Category diversity: prefer picking from different categories
+    const secondary: Article[] = [];
+    const selectedSecondaryCategories = new Set<string>([featured.category.slug]);
+
+    // Pass 1: Look for distinct category + non-similar stories
+    for (const cand of heroPool) {
+      if (secondary.length >= 3) break;
+      if (isExactDuplicate(cand)) continue;
+      if (areTitlesSimilar(cand.title, featured.title)) continue;
+      if (secondary.some((s) => areTitlesSimilar(cand.title, s.title))) continue;
+
+      if (!selectedSecondaryCategories.has(cand.category.slug)) {
+        secondary.push(cand);
+        markUsed(cand);
+        selectedSecondaryCategories.add(cand.category.slug);
+      }
+    }
+
+    // Pass 2: Fill any remaining secondary slots if diversity pass was too strict
+    if (secondary.length < 3) {
+      for (const cand of heroPool) {
+        if (secondary.length >= 3) break;
+        if (isExactDuplicate(cand)) continue;
+        if (areTitlesSimilar(cand.title, featured.title)) continue;
+        if (secondary.some((s) => areTitlesSimilar(cand.title, s.title))) continue;
+
+        secondary.push(cand);
+        markUsed(cand);
+      }
+    }
+
+    // 6. Latest News (Chronologically newest 8 stories)
     const chronological = [...allAvailable].sort(
       (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     );
-    const latestArticles = allocate(chronological, 8);
 
-    // 7. Trending News (by trending score, not already reserved)
-    const trendingPool = [...scoredArticles]
-      .sort((a, b) => b.trendingScore - a.trendingScore)
-      .map((s) => s.article);
-    const trendingArticles = allocate(trendingPool, 5);
+    const latestArticles: Article[] = [];
+    for (const cand of chronological) {
+      if (latestArticles.length >= 8) break;
+      if (!isExactDuplicate(cand)) {
+        latestArticles.push(cand);
+        markUsed(cand);
+      }
+    }
 
-    // 8. Category Sections (per-category, not already reserved)
+    // 7. Trending News (Top 5 by trending score)
+    const rankedByTrending = [...scoredArticles].sort((a, b) => b.trendingScore - a.trendingScore);
+    const trendingArticles: Article[] = [];
+    for (const item of rankedByTrending) {
+      if (trendingArticles.length >= 5) break;
+      if (!isExactDuplicate(item.article)) {
+        trendingArticles.push(item.article);
+        markUsed(item.article);
+      }
+    }
+
+    // 8. Category Sections (Technology, India, World, AI, Business, Science, Startups, Gaming, Entertainment)
+    // As stories age out of Hero/Latest, they flow into their respective category sections!
     const targetCategories = [
       'technology',
       'india',
@@ -208,26 +277,42 @@ export async function getHomepageData(): Promise<HomepageData> {
     const categoryArticles: Record<string, Article[]> = {};
 
     for (const catSlug of targetCategories) {
+      const catArticles: Article[] = [];
+
+      // A) All unreserved published DB articles for this category, newest first
       const matchedDb = dbArticles.filter(
         (a) => a.category.slug.toLowerCase() === catSlug.toLowerCase()
       );
 
-      if (matchedDb.length > 0) {
-        // Allocate from real DB articles for this category (deduplication-aware)
-        categoryArticles[catSlug] = allocate(matchedDb, 4);
-      } else {
-        // Fallback to mock category items; mock articles don't participate in
-        // global dedup so we slice without reserving (they're static placeholders)
+      for (const a of matchedDb) {
+        if (catArticles.length >= 4) break;
+        if (!isExactDuplicate(a)) {
+          catArticles.push(a);
+          markUsed(a);
+        }
+      }
+
+      // B) Backfill from high-quality curated mock articles if needed
+      if (catArticles.length < 4) {
         const matchedMock = mockArticles.filter(
           (a) => a.category.slug.toLowerCase() === catSlug.toLowerCase()
         );
-        categoryArticles[catSlug] = matchedMock.slice(0, 4);
+
+        for (const m of matchedMock) {
+          if (catArticles.length >= 4) break;
+          if (!isExactDuplicate(m) && !catArticles.some((existing) => areTitlesSimilar(existing.title, m.title))) {
+            catArticles.push(m);
+            markUsed(m);
+          }
+        }
       }
+
+      categoryArticles[catSlug] = catArticles;
     }
 
     return {
       breakingItem,
-      featured: effectiveFeatured,
+      featured,
       secondary,
       latestArticles,
       trendingArticles,
@@ -238,7 +323,6 @@ export async function getHomepageData(): Promise<HomepageData> {
   } catch (error) {
     console.error('[HomepageData] Error loading published stories from database:', error);
 
-    // Safe fallback to baseline mock data
     const featured = mockArticles[0];
     const secondary = mockArticles.slice(1, 4);
     const latestArticles = mockArticles.slice(0, 8);
@@ -257,3 +341,4 @@ export async function getHomepageData(): Promise<HomepageData> {
     };
   }
 }
+

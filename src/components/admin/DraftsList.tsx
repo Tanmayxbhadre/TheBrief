@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
 import styles from './DraftsList.module.css';
+import { notifyNewsPublished } from '@/lib/broadcast';
 
 interface DraftItem {
   id: string;
@@ -109,6 +110,9 @@ export function DraftsList({ initialCategories }: DraftsListProps) {
 
       const data = await res.json();
       if (res.ok) {
+        if (bulkConfirm.action === 'publish') {
+          notifyNewsPublished();
+        }
         const actionLabel = bulkConfirm.action === 'publish' ? 'published' : 'updated';
         setFeedback(`Successfully ${actionLabel} ${data.count} drafts.`);
         setSelectedIds([]);
