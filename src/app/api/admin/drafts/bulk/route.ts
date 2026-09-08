@@ -5,6 +5,14 @@ import { revalidateNewsPublication } from '@/lib/cache/revalidateNews';
 
 export async function POST(request: Request) {
   try {
+    const session = await getAdminSession();
+    const body = await request.json();
+    const { action, ids } = body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json({ error: 'No drafts selected' }, { status: 400 });
+    }
+
     if (action === 'publish') {
       const drafts = await prisma.articleDraft.findMany({
         where: { id: { in: ids } },
