@@ -37,6 +37,16 @@ export function verifyAdminToken(token: string): { valid: boolean; username?: st
     if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
       return { valid: false };
     }
+
+    const [username, timestampStr] = payload.split(':');
+    const timestamp = parseInt(timestampStr, 10);
+
+    // Check expiry
+    if (Date.now() - timestamp > SESSION_MAX_AGE * 1000) {
+      return { valid: false };
+    }
+
+    return { valid: true, username };
   } catch {
     return { valid: false };
   }
