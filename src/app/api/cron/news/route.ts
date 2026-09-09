@@ -78,7 +78,22 @@ async function handleCronRequest(request: Request) {
       console.warn('[NEWS-CRON] Job queue tick skipped:', qErr);
     }
 
-    // 5. Revalidate cache
+    // 5. Auto-publish APPROVED drafts that meet quality/confidence thresholds
+    let autoPublishSummary = { swept: 0, published: 0, skipped: 0, errors: 0 };
+    try {
+      const { runAutoPublishWorker } = await import('@/lib/ai/autoPublishWorker');
+      const apResult = await runAutoPublishWorker(20);
+      autoPublishSummary = {
+        swept: apResult.swept,
+        published: apResult.published,
+        skipped: apResult.skipped,
+        errors: apResult.errors.length,
+      };
+    } catch (apErr) {
+      console.warn('[NEWS-CRON] Auto-publish step skipped:', apErr);
+    }
+
+    // 6. Revalidate cache
     try {
       const { revalidateNewsCache } = await import('@/lib/revalidate');
       revalidateNewsCache();
@@ -100,6 +115,7 @@ async function handleCronRequest(request: Request) {
       clustering: clusteringSummary,
       aiGeneration: aiSummary,
       queue: queueSummary,
+      autoPublish: autoPublishSummary,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Internal Server Error';
