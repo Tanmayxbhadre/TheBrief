@@ -1,7 +1,12 @@
 /**
  * Phase 14 — Homepage Deduplication Audit
  */
-article: Article;
+import { getHomepageData } from '../src/lib/news/homepage';
+import { Article } from '../src/lib/types';
+
+interface SectionEntry {
+  section: string;
+  article: Article;
 }
 
 async function main() {
