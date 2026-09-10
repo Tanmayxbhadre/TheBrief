@@ -6,7 +6,16 @@ async function main() {
   console.log('==================================================\n');
 
   try {
-    const reg('\n==================================================');
+    const result = await runNewsCollectionJob({ trigger: 'cli' });
+
+    if (result.skipped) {
+      console.log(`[SKIPPED] ${result.reason || 'Job lock active'}`);
+      process.exit(0);
+    }
+
+    const durationSec = (result.durationMs / 1000).toFixed(2);
+
+    console.log('\n==================================================');
     console.log(`COLLECTION SUMMARY [${result.status}]`);
     console.log('==================================================');
     console.log(`Job ID:            ${result.jobId || 'N/A'}`);
