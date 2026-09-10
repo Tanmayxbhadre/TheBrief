@@ -7,8 +7,13 @@ import {
   RewriteImprovementSchema,
   FactCheckImprovementSchema,
 } from '../src/lib/ai/schemas';
-import {
-  aiServic
+import { aiService } from '../src/lib/ai/service';
+import { sanitizeAiText, sanitizeStructuredAiOutput } from '../src/lib/ai/sanitize';
+import { aiRateLimiter } from '../src/lib/ai/rateLimit';
+import { runNewsCollectionJob } from '../src/lib/news/jobRunner';
+import { prisma } from '../src/lib/db';
+
+let passed = 0;
 let failed = 0;
 
 function assert(condition: boolean, testName: string) {
