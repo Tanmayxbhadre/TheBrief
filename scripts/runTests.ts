@@ -7,13 +7,8 @@ import {
   RewriteImprovementSchema,
   FactCheckImprovementSchema,
 } from '../src/lib/ai/schemas';
-import { aiService } from '../src/lib/ai/service';
-import { sanitizeAiText, sanitizeStructuredAiOutput } from '../src/lib/ai/sanitize';
-import { aiRateLimiter } from '../src/lib/ai/rateLimit';
-import { runNewsCollectionJob } from '../src/lib/news/jobRunner';
-import { prisma } from '../src/lib/db';
-
-let passed = 0;
+import {
+  aiServic
 let failed = 0;
 
 function assert(condition: boolean, testName: string) {
@@ -35,7 +30,7 @@ async function runAllTests() {
   // TEST GROUP 1: Zod Schemas Validation
   // ----------------------------------------------------
   console.log('--- Test Suite 1: AI Zod Validation Schemas ---');
-  
+
   const validDraft = {
     title: 'NVIDIA Unveils Next-Generation Blackwell Ultra AI Accelerators',
     suggestedSlug: 'nvidia-unveils-blackwell-ultra-accelerators',
@@ -151,7 +146,7 @@ async function runAllTests() {
 
   aiRateLimiter.reset();
   const testUser = 'editor_test_user';
-  
+
   // First 3 requests with limit 3 should be allowed
   const r1 = aiRateLimiter.check(testUser, 3, 5000);
   const r2 = aiRateLimiter.check(testUser, 3, 5000);
@@ -470,7 +465,7 @@ async function runAllTests() {
   let parsedDraftSources: Array<{ name: string; url: string }> = [];
   try {
     if (createdClusterDraft?.sources) parsedDraftSources = JSON.parse(createdClusterDraft.sources);
-  } catch {}
+  } catch { }
   assert(parsedDraftSources.length >= 2, 'Synthesized article retains attribution for all contributing sources');
 
   // ----------------------------------------------------
