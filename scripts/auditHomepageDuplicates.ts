@@ -103,9 +103,13 @@ async function main() {
   console.log(`Duplicate article IDs:     ${dupIds === 0 ? 'PASS (0)' : 'FAIL (' + dupIds + ')'}`);
   console.log(`Duplicate StoryClusters:   ${dupClusters === 0 ? 'PASS (0)' : 'FAIL (' + dupClusters + ')'}`);
   console.log(`Duplicate canonical paths: ${dupPaths === 0 ? 'PASS (0)' : 'FAIL (' + dupPaths + ')'}`);
-  console.nding(${ data.trendingArticles.length } / 5): PASS`);
-  console.log(`Categories populated:      ${ Object.keys(data.categoryArticles).length } `);
-  console.log(`Homepage overall:          ${ allPass ? 'PASS' : 'FAIL' } `);
+  console.log(`Duplicate slugs:           ${dupSlugs === 0 ? 'PASS (0)' : 'FAIL (' + dupSlugs + ')'}`);
+  console.log(`Hero:                      ${data.featured ? 'PASS' : 'FAIL'}`);
+  console.log(`Secondary (${data.secondary.length}/3):        ${data.secondary.length > 0 ? 'PASS' : 'WARN (sparse DB)'}`);
+  console.log(`Latest (${data.latestArticles.length}/8):          PASS`);
+  console.log(`Trending (${data.trendingArticles.length}/5):         PASS`);
+  console.log(`Categories populated:      ${Object.keys(data.categoryArticles).length}`);
+  console.log(`Homepage overall:          ${allPass ? 'PASS' : 'FAIL'}`);
   console.log('==============================================');
 
   process.exit(allPass ? 0 : 1);
