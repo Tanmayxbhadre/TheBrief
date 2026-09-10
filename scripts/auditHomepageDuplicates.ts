@@ -34,85 +34,79 @@ async function main() {
 
   const idMap = new Map<string, string[]>();
   const clusterMap = new Map<string, string[]>();
-  const pathMap = new Map<string, string[]>();
-  const slugMap = new Map<string, string[]>();
-
-  for (const { section, article } of entries) {
-    const track = (map: Map<string, string[]>, key: string) => {
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(section);
-    };
-    track(idMap, article.id);
-    const clusterId = (article as { storyClusterId?: string }).storyClusterId;
-    if (clusterId) track(clusterMap, clusterId);
-    track(pathMap, `${article.category.slug}/${article.slug}`);
-    track(slugMap, article.slug);
+  const pathMap = tion);
+};
+track(idMap, article.id);
+const clusterId = (article as { storyClusterId?: string }).storyClusterId;
+if (clusterId) track(clusterMap, clusterId);
+track(pathMap, `${article.category.slug}/${article.slug}`);
+track(slugMap, article.slug);
   }
 
-  let dupIds = 0, dupClusters = 0, dupPaths = 0, dupSlugs = 0;
+let dupIds = 0, dupClusters = 0, dupPaths = 0, dupSlugs = 0;
 
-  console.log('\n== DUPLICATE ARTICLE IDs ==');
-  for (const [id, sections] of idMap) {
-    if (sections.length > 1) { dupIds++; console.log(`  DUPLICATE id=${id} in: ${sections.join(', ')}`); }
-  }
-  if (dupIds === 0) console.log('  None');
+console.log('\n== DUPLICATE ARTICLE IDs ==');
+for (const [id, sections] of idMap) {
+  if (sections.length > 1) { dupIds++; console.log(`  DUPLICATE id=${id} in: ${sections.join(', ')}`); }
+}
+if (dupIds === 0) console.log('  None');
 
-  console.log('\n== DUPLICATE STORY CLUSTER IDs ==');
-  for (const [cid, sections] of clusterMap) {
-    if (sections.length > 1) { dupClusters++; console.log(`  DUPLICATE clusterId=${cid} in: ${sections.join(', ')}`); }
-  }
-  if (dupClusters === 0) console.log('  None');
+console.log('\n== DUPLICATE STORY CLUSTER IDs ==');
+for (const [cid, sections] of clusterMap) {
+  if (sections.length > 1) { dupClusters++; console.log(`  DUPLICATE clusterId=${cid} in: ${sections.join(', ')}`); }
+}
+if (dupClusters === 0) console.log('  None');
 
-  console.log('\n== DUPLICATE CANONICAL PATHS ==');
-  for (const [path, sections] of pathMap) {
-    if (sections.length > 1) { dupPaths++; console.log(`  DUPLICATE path=${path} in: ${sections.join(', ')}`); }
-  }
-  if (dupPaths === 0) console.log('  None');
+console.log('\n== DUPLICATE CANONICAL PATHS ==');
+for (const [path, sections] of pathMap) {
+  if (sections.length > 1) { dupPaths++; console.log(`  DUPLICATE path=${path} in: ${sections.join(', ')}`); }
+}
+if (dupPaths === 0) console.log('  None');
 
-  console.log('\n== DUPLICATE SLUGS ==');
-  for (const [slug, sections] of slugMap) {
-    if (sections.length > 1) { dupSlugs++; console.log(`  DUPLICATE slug=${slug} in: ${sections.join(', ')}`); }
-  }
-  if (dupSlugs === 0) console.log('  None');
+console.log('\n== DUPLICATE SLUGS ==');
+for (const [slug, sections] of slugMap) {
+  if (sections.length > 1) { dupSlugs++; console.log(`  DUPLICATE slug=${slug} in: ${sections.join(', ')}`); }
+}
+if (dupSlugs === 0) console.log('  None');
 
-  console.log('\n== SECTION CONTENTS ==');
-  const printSection = (label: string, arts: Article[]) => {
-    if (arts.length === 0) {
-      console.log(`  ${label}: (empty - all articles reserved by higher-priority sections)`);
-    } else {
-      for (const a of arts) {
-        const c = (a as { storyClusterId?: string }).storyClusterId;
-        console.log(`  ${label}: [${a.id.slice(0, 8)}] "${a.title.slice(0, 60)}"${c ? ` cluster=${c.slice(0, 8)}` : ''}`);
-      }
+console.log('\n== SECTION CONTENTS ==');
+const printSection = (label: string, arts: Article[]) => {
+  if (arts.length === 0) {
+    console.log(`  ${label}: (empty - all articles reserved by higher-priority sections)`);
+  } else {
+    for (const a of arts) {
+      const c = (a as { storyClusterId?: string }).storyClusterId;
+      console.log(`  ${label}: [${a.id.slice(0, 8)}] "${a.title.slice(0, 60)}"${c ? ` cluster=${c.slice(0, 8)}` : ''}`);
     }
-  };
-
-  printSection('Hero', [data.featured]);
-  printSection('Secondary', data.secondary);
-  printSection('Latest', data.latestArticles);
-  printSection('Trending', data.trendingArticles);
-  for (const [cat, arts] of Object.entries(data.categoryArticles)) {
-    printSection(`Category:${cat}`, arts);
   }
+};
 
-  const allPass = dupIds === 0 && dupClusters === 0 && dupPaths === 0 && dupSlugs === 0;
+printSection('Hero', [data.featured]);
+printSection('Secondary', data.secondary);
+printSection('Latest', data.latestArticles);
+printSection('Trending', data.trendingArticles);
+for (const [cat, arts] of Object.entries(data.categoryArticles)) {
+  printSection(`Category:${cat}`, arts);
+}
 
-  console.log('\n==============================================');
-  console.log('FINAL REPORT');
-  console.log('==============================================');
-  console.log(`Duplicate article IDs:     ${dupIds === 0 ? 'PASS (0)' : 'FAIL (' + dupIds + ')'}`);
-  console.log(`Duplicate StoryClusters:   ${dupClusters === 0 ? 'PASS (0)' : 'FAIL (' + dupClusters + ')'}`);
-  console.log(`Duplicate canonical paths: ${dupPaths === 0 ? 'PASS (0)' : 'FAIL (' + dupPaths + ')'}`);
-  console.log(`Duplicate slugs:           ${dupSlugs === 0 ? 'PASS (0)' : 'FAIL (' + dupSlugs + ')'}`);
-  console.log(`Hero:                      ${data.featured ? 'PASS' : 'FAIL'}`);
-  console.log(`Secondary (${data.secondary.length}/3):        ${data.secondary.length > 0 ? 'PASS' : 'WARN (sparse DB)'}`);
-  console.log(`Latest (${data.latestArticles.length}/8):          PASS`);
-  console.log(`Trending (${data.trendingArticles.length}/5):         PASS`);
-  console.log(`Categories populated:      ${Object.keys(data.categoryArticles).length}`);
-  console.log(`Homepage overall:          ${allPass ? 'PASS' : 'FAIL'}`);
-  console.log('==============================================');
+const allPass = dupIds === 0 && dupClusters === 0 && dupPaths === 0 && dupSlugs === 0;
 
-  process.exit(allPass ? 0 : 1);
+console.log('\n==============================================');
+console.log('FINAL REPORT');
+console.log('==============================================');
+console.log(`Duplicate article IDs:     ${dupIds === 0 ? 'PASS (0)' : 'FAIL (' + dupIds + ')'}`);
+console.log(`Duplicate StoryClusters:   ${dupClusters === 0 ? 'PASS (0)' : 'FAIL (' + dupClusters + ')'}`);
+console.log(`Duplicate canonical paths: ${dupPaths === 0 ? 'PASS (0)' : 'FAIL (' + dupPaths + ')'}`);
+console.log(`Duplicate slugs:           ${dupSlugs === 0 ? 'PASS (0)' : 'FAIL (' + dupSlugs + ')'}`);
+console.log(`Hero:                      ${data.featured ? 'PASS' : 'FAIL'}`);
+console.log(`Secondary (${data.secondary.length}/3):        ${data.secondary.length > 0 ? 'PASS' : 'WARN (sparse DB)'}`);
+console.log(`Latest (${data.latestArticles.length}/8):          PASS`);
+console.log(`Trending (${data.trendingArticles.length}/5):         PASS`);
+console.log(`Categories populated:      ${Object.keys(data.categoryArticles).length}`);
+console.log(`Homepage overall:          ${allPass ? 'PASS' : 'FAIL'}`);
+console.log('==============================================');
+
+process.exit(allPass ? 0 : 1);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
