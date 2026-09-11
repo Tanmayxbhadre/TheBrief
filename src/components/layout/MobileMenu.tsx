@@ -19,8 +19,10 @@ const ALL_CATEGORIES = [
   { label: 'Technology', href: '/technology' },
   { label: 'AI', href: '/ai' },
   { label: 'Business', href: '/business' },
+  { label: 'Finance', href: '/finance' },
   { label: 'Startups', href: '/startups' },
   { label: 'Science', href: '/science' },
+  { label: 'Sports', href: '/sports' },
   { label: 'Gaming', href: '/gaming' },
   { label: 'Entertainment', href: '/entertainment' },
 ];

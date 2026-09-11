@@ -11,7 +11,9 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   science: ['space', 'nasa', 'research', 'discovery', 'physics', 'quantum', 'biology'],
   entertainment: ['movie', 'film', 'netflix', 'actor', 'actress', 'hollywood', 'bollywood', 'music', 'album'],
   india: ['india', 'modi', 'delhi', 'mumbai', 'bjp', 'congress', 'rbi', 'sensex'],
-  world: ['global', 'un', 'world', 'international', 'europe', 'asia', 'africa', 'america']
+  world: ['global', 'un', 'world', 'international', 'europe', 'asia', 'africa', 'america'],
+  sports: ['cricket', 'football', 'soccer', 'tennis', 'olympics', 'fifa', 'ipl', 'nba', 'nfl', 'wimbledon', 'grand slam', 'test match', 't20', 'odi'],
+  finance: ['ipo', 'mutual fund', 'cryptocurrency', 'bitcoin', 'crypto', 'forex', 'bond yield', 'dividend', 'stock split', 'gold price', 'rupee', 'dollar index']
 };
 
 export function classifyCategory(title: string, defaultCategory: string): string {

@@ -10,6 +10,7 @@ export interface JobRunnerResult {
   sourcesProcessed: number;
   newItems: number;
   duplicates: number;
+  staleFiltered: number;
   failedSources: number;
   itemsFound: number;
   durationMs: number;
@@ -94,6 +95,7 @@ export async function runNewsCollectionJob(options?: {
       sourcesProcessed: 0,
       newItems: 0,
       duplicates: 0,
+      staleFiltered: 0,
       failedSources: 0,
       itemsFound: 0,
       durationMs: Date.now() - startTime,
@@ -147,7 +149,7 @@ export async function runNewsCollectionJob(options?: {
     }
 
     console.log(
-      `[NEWS-CRON] [${trigger.toUpperCase()}] Job ${status}: ${summary.newItems} new items, ${summary.duplicates} duplicates from ${summary.successfulSources}/${summary.sourcesProcessed} sources in ${durationMs}ms.`
+      `[NEWS-CRON] [${trigger.toUpperCase()}] Job ${status}: ${summary.newItems} new items, ${summary.duplicates} duplicates, ${summary.staleFiltered} stale-filtered from ${summary.successfulSources}/${summary.sourcesProcessed} sources in ${durationMs}ms.`
     );
 
     return {
@@ -157,6 +159,7 @@ export async function runNewsCollectionJob(options?: {
       sourcesProcessed: summary.sourcesProcessed,
       newItems: summary.newItems,
       duplicates: summary.duplicates,
+      staleFiltered: summary.staleFiltered,
       failedSources: summary.failedSources,
       itemsFound: summary.itemsFound,
       durationMs,
@@ -186,6 +189,7 @@ export async function runNewsCollectionJob(options?: {
       sourcesProcessed: 0,
       newItems: 0,
       duplicates: 0,
+      staleFiltered: 0,
       failedSources: 0,
       itemsFound: 0,
       durationMs,

@@ -24,8 +24,8 @@ export async function runAutoPublishWorker(limit = 20): Promise<AutoPublishResul
     return { swept: 0, published: 0, skipped: 0, errors: [] };
   }
 
-  const minConfidence = parseInt(process.env.AUTO_PUBLISH_MIN_CONFIDENCE || '90', 10);
-  const minQuality = parseInt(process.env.AUTO_PUBLISH_MIN_QUALITY || '90', 10);
+  const minConfidence = parseInt(process.env.AUTO_PUBLISH_MIN_CONFIDENCE || '70', 10);
+  const minQuality = parseInt(process.env.AUTO_PUBLISH_MIN_QUALITY || '65', 10);
 
   const candidates = await prisma.articleDraft.findMany({
     where: {

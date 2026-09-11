@@ -555,7 +555,8 @@ async function runAllTests() {
   console.log('\n--- Test Suite 14: Controlled Auto-Publishing & Editorial Decision Engine ---');
   const { calculatePublishConfidence: calcPubConf } = await import('../src/lib/ai/articleGenerationWorker');
 
-  // CASE 1: confidence >= 90, quality >= 90, safe topic, multiple reliable sources -> AUTO_PUBLISH
+  // CASE 1: confidence & quality comfortably above the auto-publish bar, safe topic,
+  // multiple reliable sources -> AUTO_PUBLISH
   const case1 = calcPubConf({
     aiQualityScore: 95,
     sourceReliability: 95,
@@ -566,7 +567,8 @@ async function runAllTests() {
   });
   assert(case1.decision === 'AUTO_PUBLISH', 'CASE 1: High-confidence & safe multi-source qualifies for AUTO_PUBLISH');
 
-  // CASE 2: confidence < 90 (e.g. 89), quality 95 -> HUMAN_REVIEW (DRAFT)
+  // CASE 2: source reliability below the configured floor (85) -> HUMAN_REVIEW (DRAFT),
+  // even for a single/low-corroboration story with otherwise high quality.
   const case2 = calcPubConf({
     aiQualityScore: 95,
     sourceReliability: 70,
@@ -574,17 +576,32 @@ async function runAllTests() {
     category: 'technology',
     title: 'Tech Startup Announces Seed Round Funding',
   });
-  assert(case2.decision === 'HUMAN_REVIEW' && case2.action !== 'AUTO_PUBLISH', 'CASE 2: Confidence < 90 forces HUMAN_REVIEW (DRAFT)');
+  assert(case2.decision === 'HUMAN_REVIEW' && case2.action !== 'AUTO_PUBLISH', 'CASE 2: Source reliability below threshold forces HUMAN_REVIEW (DRAFT)');
 
-  // CASE 3: confidence >= 90, quality < 90 (e.g. 89) -> HUMAN_REVIEW (DRAFT)
+  // CASE 3: quality score below the configured floor (65) -> HUMAN_REVIEW (DRAFT),
+  // even with a highly reliable, multi-source story.
   const case3 = calcPubConf({
-    aiQualityScore: 89,
+    aiQualityScore: 60,
     sourceReliability: 95,
     sourceCount: 4,
     category: 'technology',
     title: 'Cloud Infrastructure Provider Expands Regional Datacenter',
   });
-  assert(case3.decision === 'HUMAN_REVIEW' && case3.action !== 'AUTO_PUBLISH', 'CASE 3: Quality < 90 forces HUMAN_REVIEW (DRAFT)');
+  assert(case3.decision === 'HUMAN_REVIEW' && case3.action !== 'AUTO_PUBLISH', 'CASE 3: Quality below threshold forces HUMAN_REVIEW (DRAFT)');
+
+  // CASE 3b: a genuinely SINGLE-SOURCE story (sourceCount = 1) from a highly reliable
+  // outlet, with strong AI quality, still qualifies for AUTO_PUBLISH. This is the
+  // core hourly-automation behavior — THE BRIEF must not wait for a second outlet
+  // to report the same story before publishing.
+  const case3b = calcPubConf({
+    aiQualityScore: 90,
+    sourceReliability: 95,
+    sourceCount: 1,
+    category: 'technology',
+    title: 'Space Agency Confirms Successful Satellite Deployment',
+    content: 'The agency confirmed the satellite reached its target orbit after a nominal launch sequence.',
+  });
+  assert(case3b.decision === 'AUTO_PUBLISH', 'CASE 3b: Single-source story from a reliable outlet still qualifies for AUTO_PUBLISH');
 
   // CASE 4: confidence 98, quality 98, sensitive topic (politics / election / conflict) -> HUMAN_REVIEW (DRAFT)
   const case4 = calcPubConf({

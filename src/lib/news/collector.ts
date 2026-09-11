@@ -19,12 +19,22 @@ export interface CollectionSummary {
   itemsFound: number;
   newItems: number;
   duplicates: number;
+  staleFiltered: number;
   sourceErrors?: SourceFailureRecord[];
+}
+
+// How far back (in hours) a freshly-fetched article is allowed to be published
+// and still be considered "new" for ingestion. Configurable via NEWS_LOOKBACK_HOURS.
+// Items without a parseable publish date are always kept (better to review than to miss).
+function getLookbackHours(): number {
+  const parsed = parseFloat(process.env.NEWS_LOOKBACK_HOURS || '2');
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 2;
 }
 
 export async function collectAllNews(): Promise<CollectionSummary> {
   const sources = getEnabledSources();
   const sourceErrors: SourceFailureRecord[] = [];
+  const lookbackHours = getLookbackHours();
 
   const summary: CollectionSummary = {
     sourcesProcessed: sources.length,
@@ -33,6 +43,7 @@ export async function collectAllNews(): Promise<CollectionSummary> {
     itemsFound: 0,
     newItems: 0,
     duplicates: 0,
+    staleFiltered: 0,
     sourceErrors,
   };
 
@@ -72,6 +83,16 @@ export async function collectAllNews(): Promise<CollectionSummary> {
       summary.itemsFound += itemsFound;
 
       for (const item of parsedItems) {
+        // Freshness filter: skip articles published outside the configured lookback
+        // window so we don't keep re-evaluating the same old backlog every run.
+        if (item.publishedAt) {
+          const ageHours = (Date.now() - item.publishedAt.getTime()) / (1000 * 60 * 60);
+          if (ageHours > lookbackHours) {
+            summary.staleFiltered++;
+            continue;
+          }
+        }
+
         const normUrl = normalizeUrl(item.originalUrl);
         const contentHash = generateContentHash(item.title, sourceConfig.id);
         const categoryName = classifyCategory(item.title, sourceConfig.defaultCategory);

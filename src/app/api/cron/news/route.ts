@@ -61,10 +61,14 @@ async function handleCronRequest(request: Request) {
     }
 
     // 3. Run background AI drafting worker
-    let aiSummary = { processed: 0, draftsCreated: 0 };
+    let aiSummary: { processed: number; draftsCreated: number; errors: Array<{ id: string; error: string }> } = {
+      processed: 0,
+      draftsCreated: 0,
+      errors: [],
+    };
     try {
       const { runArticleGenerationWorker } = await import('@/lib/ai/articleGenerationWorker');
-      aiSummary = await runArticleGenerationWorker(3);
+      aiSummary = await runArticleGenerationWorker();
     } catch (aiErr) {
       console.warn('[NEWS-CRON] AI worker step skipped:', aiErr);
     }
@@ -101,6 +105,26 @@ async function handleCronRequest(request: Request) {
       console.warn('[NEWS-CRON] Cache revalidation skipped:', revErr);
     }
 
+    // 7. Print a single, human-readable summary block for easy debugging in logs
+    const finishedAt = new Date();
+    console.log(
+      [
+        '[THEBRIEF CRON]',
+        `Finished: ${finishedAt.toISOString()}`,
+        `Sources checked: ${result.sourcesProcessed}`,
+        `Articles fetched: ${result.itemsFound}`,
+        `Stale filtered: ${result.staleFiltered}`,
+        `Duplicates skipped: ${result.duplicates}`,
+        `New articles: ${result.newItems}`,
+        `AI processed: ${aiSummary.processed}`,
+        `Drafts created: ${aiSummary.draftsCreated}`,
+        `Auto-published: ${autoPublishSummary.published}`,
+        `Failed sources: ${result.failedSources}`,
+        `Failed AI generations: ${aiSummary.errors.length}`,
+        `Status: ${result.status}`,
+      ].join(' | ')
+    );
+
     return NextResponse.json({
       success: result.success,
       jobId: result.jobId,
@@ -109,6 +133,7 @@ async function handleCronRequest(request: Request) {
         sourcesProcessed: result.sourcesProcessed,
         newItems: result.newItems,
         duplicates: result.duplicates,
+        staleFiltered: result.staleFiltered,
         failedSources: result.failedSources,
         durationMs: result.durationMs,
       },

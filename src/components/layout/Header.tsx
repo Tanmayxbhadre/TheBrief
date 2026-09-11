@@ -14,7 +14,9 @@ const NAV_LINKS = [
   { label: 'Technology', href: '/technology' },
   { label: 'AI', href: '/ai' },
   { label: 'Business', href: '/business' },
+  { label: 'Finance', href: '/finance' },
   { label: 'Science', href: '/science' },
+  { label: 'Sports', href: '/sports' },
   { label: 'Startups', href: '/startups' },
 ];
 

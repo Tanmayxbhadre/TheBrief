@@ -157,6 +157,12 @@ export function calculatePublishConfidence(options: {
   // - Multi-source agreement / breadth: 25%
   // - AI Quality: 30%
   // - Freshness / verification: 10%
+  //
+  // NOTE: Single-source stories (sourceCount === 1) are NOT excluded from
+  // auto-publishing — they simply receive a smaller "multiSourceBonus" than
+  // stories that have been independently corroborated by multiple outlets.
+  // This is what allows THE BRIEF to publish fresh news automatically every
+  // hour instead of waiting for a second outlet to report the same story.
   let multiSourceBonus = 10;
   if (sourceCount >= 5) multiSourceBonus = 25;
   else if (sourceCount >= 3) multiSourceBonus = 20;
@@ -174,8 +180,9 @@ export function calculatePublishConfidence(options: {
   const combinedText = `${title} ${content}`;
   const isSensitive = isSensitiveContent(combinedText, category);
   const autoPublishEnabled = process.env.AUTO_PUBLISH_ENABLED === 'true';
-  const minConfidence = parseInt(process.env.AUTO_PUBLISH_MIN_CONFIDENCE || '90', 10);
-  const minQuality = parseInt(process.env.AUTO_PUBLISH_MIN_QUALITY || '90', 10);
+  const minConfidence = parseInt(process.env.AUTO_PUBLISH_MIN_CONFIDENCE || '70', 10);
+  const minQuality = parseInt(process.env.AUTO_PUBLISH_MIN_QUALITY || '65', 10);
+  const minSourceReliability = parseInt(process.env.AUTO_PUBLISH_MIN_SOURCE_RELIABILITY || '85', 10);
 
   // Compile detailed failure reasons
   const failureReasons: string[] = [];
@@ -194,16 +201,17 @@ export function calculatePublishConfidence(options: {
   if (aiQualityScore < minQuality) {
     failureReasons.push(`Quality score below auto-publish threshold (${aiQualityScore} < ${minQuality})`);
   }
-  if (sourceReliability < 88) {
-    failureReasons.push(`Source reliability below threshold (${sourceReliability} < 88)`);
-  }
-  if (sourceCount < 2) {
-    failureReasons.push(`Insufficient independent sources (${sourceCount} < 2)`);
+  if (sourceReliability < minSourceReliability) {
+    failureReasons.push(`Source reliability below threshold (${sourceReliability} < ${minSourceReliability})`);
   }
 
   let action: 'AUTO_PUBLISH' | 'ADMIN_QUICK_REVIEW' | 'FULL_EDITORIAL_REVIEW' | 'HOLD';
   let decision: 'AUTO_PUBLISH' | 'HUMAN_REVIEW' = 'HUMAN_REVIEW';
   let decisionReason = '';
+
+  if (sourceCount < 2) {
+    notes.push('Single-source story — no additional corroborating outlets yet');
+  }
 
   const passesAllChecks =
     autoPublishEnabled &&
@@ -211,8 +219,7 @@ export function calculatePublishConfidence(options: {
     !hasFactCheckFlag &&
     publishConfidence >= minConfidence &&
     aiQualityScore >= minQuality &&
-    sourceReliability >= 88 &&
-    sourceCount >= 2;
+    sourceReliability >= minSourceReliability;
 
   if (passesAllChecks) {
     action = 'AUTO_PUBLISH';
@@ -439,7 +446,7 @@ export async function generateDraftForCluster(
 /**
  * Background Article Generation Worker: scans for eligible items & clusters and generates drafts
  */
-export async function runArticleGenerationWorker(limit = 3): Promise<{
+export async function runArticleGenerationWorker(multiSourceLimit?: number): Promise<{
   processed: number;
   draftsCreated: number;
   errors: Array<{ id: string; error: string }>;
@@ -447,13 +454,18 @@ export async function runArticleGenerationWorker(limit = 3): Promise<{
   const errors: Array<{ id: string; error: string }> = [];
   let draftsCreated = 0;
 
-  // 1. Process multi-source clusters first (higher value)
+  const resolvedMultiLimit =
+    multiSourceLimit ?? parseInt(process.env.NEWS_MAX_MULTI_SOURCE_DRAFTS_PER_RUN || '5', 10);
+  const singleSourceLimit = parseInt(process.env.NEWS_MAX_SINGLE_SOURCE_DRAFTS_PER_RUN || '15', 10);
+
+  // 1. Process multi-source clusters first (higher editorial value — independently
+  // corroborated by more than one outlet).
   const candidateClusters = await prisma.storyCluster.findMany({
     where: {
       status: { in: ['PENDING', 'ACTIVE'] },
       sourceCount: { gte: 2 },
     },
-    take: limit,
+    take: resolvedMultiLimit,
     orderBy: { importanceScore: 'desc' },
   });
 
@@ -468,8 +480,33 @@ export async function runArticleGenerationWorker(limit = 3): Promise<{
     }
   }
 
+  // 2. Process single-source stories too. Most fresh news only appears on one
+  // reliable outlet at ingestion time — without this step those stories would
+  // stay PENDING forever and THE BRIEF would never actually publish anything
+  // automatically. Quality/confidence gating in generateDraftForCluster still
+  // decides whether each one is safe to auto-publish.
+  const singleSourceClusters = await prisma.storyCluster.findMany({
+    where: {
+      status: 'PENDING',
+      sourceCount: 1,
+    },
+    take: singleSourceLimit,
+    orderBy: [{ importanceScore: 'desc' }, { lastSeenAt: 'desc' }],
+  });
+
+  for (const cluster of singleSourceClusters) {
+    try {
+      await generateDraftForCluster(cluster.id);
+      draftsCreated++;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      errors.push({ id: cluster.id, error: msg });
+      console.error(`[AI-WORKER] Failed single-source cluster ${cluster.id}:`, msg);
+    }
+  }
+
   return {
-    processed: candidateClusters.length,
+    processed: candidateClusters.length + singleSourceClusters.length,
     draftsCreated,
     errors,
   };

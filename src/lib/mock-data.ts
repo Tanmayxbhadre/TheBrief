@@ -128,6 +128,22 @@ export const categories: Category[] = [
     seoTitle: 'Entertainment News — THE BRIEF',
     seoDescription: 'Latest entertainment news covering Bollywood, Hollywood, OTT releases, music, and pop culture trends.',
   },
+  {
+    id: 'c10',
+    name: 'Sports',
+    slug: 'sports',
+    description: 'Cricket, football, and major sporting events from India and the world.',
+    seoTitle: 'Sports News — THE BRIEF',
+    seoDescription: 'Latest sports news covering cricket, football, tennis, the Olympics, and major tournaments from India and around the world.',
+  },
+  {
+    id: 'c11',
+    name: 'Finance',
+    slug: 'finance',
+    description: 'Markets, banking, personal finance, and the economy.',
+    seoTitle: 'Finance News — THE BRIEF',
+    seoDescription: 'Latest finance news covering stock markets, banking, personal finance, cryptocurrency, and the global economy.',
+  },
 ];
 
 export const getCategoryBySlug = (slug: string): Category | undefined =>

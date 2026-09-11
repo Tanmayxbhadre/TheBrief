@@ -260,7 +260,7 @@ export async function getHomepageData(): Promise<HomepageData> {
       }
     }
 
-    // 8. Category Sections (Technology, India, World, AI, Business, Science, Startups, Gaming, Entertainment)
+    // 8. Category Sections (Technology, India, World, AI, Business, Finance, Science, Startups, Sports, Gaming, Entertainment)
     // As stories age out of Hero/Latest, they flow into their respective category sections!
     const targetCategories = [
       'technology',
@@ -268,8 +268,10 @@ export async function getHomepageData(): Promise<HomepageData> {
       'world',
       'ai',
       'business',
+      'finance',
       'science',
       'startups',
+      'sports',
       'gaming',
       'entertainment',
     ];

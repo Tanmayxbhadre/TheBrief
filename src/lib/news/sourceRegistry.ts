@@ -132,7 +132,85 @@ export const SOURCES: NewsSourceConfig[] = [
     priority: 2,
     reliabilityScore: 89,
     categoryCoverage: ['world', 'politics', 'human-rights', 'economy'],
-  }
+  },
+
+  // Sports
+  {
+    id: 'bbc-sport',
+    name: 'BBC Sport',
+    type: 'rss',
+    url: 'http://feeds.bbci.co.uk/sport/rss.xml',
+    defaultCategory: 'sports',
+    language: 'en',
+    country: 'UK',
+    region: 'Global',
+    enabled: true,
+    priority: 2,
+    reliabilityScore: 94,
+    categoryCoverage: ['sports', 'cricket', 'football', 'tennis'],
+  },
+
+  // Finance
+  {
+    id: 'economic-times-markets',
+    name: 'Economic Times Markets',
+    type: 'rss',
+    url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms',
+    defaultCategory: 'finance',
+    language: 'en',
+    country: 'IN',
+    region: 'South Asia',
+    enabled: true,
+    priority: 2,
+    reliabilityScore: 88,
+    categoryCoverage: ['finance', 'business', 'markets', 'economy'],
+  },
+  {
+    id: 'marketwatch-top',
+    name: 'MarketWatch',
+    type: 'rss',
+    url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories',
+    defaultCategory: 'finance',
+    language: 'en',
+    country: 'US',
+    region: 'North America',
+    enabled: true,
+    priority: 2,
+    reliabilityScore: 90,
+    categoryCoverage: ['finance', 'business', 'markets'],
+  },
+
+  // Entertainment
+  {
+    id: 'variety-entertainment',
+    name: 'Variety',
+    type: 'rss',
+    url: 'https://variety.com/feed/',
+    defaultCategory: 'entertainment',
+    language: 'en',
+    country: 'US',
+    region: 'Global',
+    enabled: true,
+    priority: 2,
+    reliabilityScore: 87,
+    categoryCoverage: ['entertainment', 'movies', 'music'],
+  },
+
+  // Science
+  {
+    id: 'science-daily',
+    name: 'ScienceDaily',
+    type: 'rss',
+    url: 'https://www.sciencedaily.com/rss/all.xml',
+    defaultCategory: 'science',
+    language: 'en',
+    country: 'US',
+    region: 'Global',
+    enabled: true,
+    priority: 2,
+    reliabilityScore: 89,
+    categoryCoverage: ['science', 'research', 'health'],
+  },
 ];
 
 export function getEnabledSources() {
