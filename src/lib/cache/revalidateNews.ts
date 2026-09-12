@@ -51,11 +51,11 @@ export async function revalidateNewsPublication(options: RevalidateOptions = {})
 
     // 4. Invalidate tagged Next.js cache segments
     try {
-      revalidateTag('news', 'max');
-      revalidateTag('homepage', 'max');
-      revalidateTag('articles', 'max');
-      revalidateTag('categories', 'max');
-      revalidateTag('breaking', 'max');
+      revalidateTag('news');
+      revalidateTag('homepage');
+      revalidateTag('articles');
+      revalidateTag('categories');
+      revalidateTag('breaking');
     } catch {
       // Tags fallback
     }
