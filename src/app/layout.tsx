@@ -1,10 +1,19 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import SchemaOrg from '@/components/seo/SchemaOrg';
+import GlobalLiveNewsListener from '@/components/layout/GlobalLiveNewsListener';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://thebrief.in';
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#fafaf8',
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -73,6 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <Footer />
         </div>
+        <GlobalLiveNewsListener />
       </body>
     </html>
   );

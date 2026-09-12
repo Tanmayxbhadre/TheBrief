@@ -1,6 +1,7 @@
 import { prisma } from '../db';
 import { isSensitiveContent } from './articleGenerationWorker';
 import { revalidateNewsPublication } from '../cache/revalidateNews';
+import { optimizeArticleSeo } from '../seo/optimizer';
 
 export interface AutoPublishResult {
   swept: number;
@@ -65,12 +66,35 @@ export async function runAutoPublishWorker(limit = 20): Promise<AutoPublishResul
         continue;
       }
 
+      // Optimize SEO attributes before publishing
+      const optimizedSeo = optimizeArticleSeo({
+        title: draft.title,
+        slug: draft.slug,
+        excerpt: draft.excerpt,
+        content: draft.content,
+        seoTitle: draft.seoTitle,
+        metaDescription: draft.metaDescription,
+        categorySlug,
+        authorName: draft.authorName,
+        featuredImage: draft.featuredImage,
+        imageAlt: draft.imageAlt,
+        sources: draft.sources,
+        quickSummary: draft.quickSummary,
+        whatYouNeedToKnow: draft.whatYouNeedToKnow,
+        tags: draft.tags,
+      });
+
       await prisma.articleDraft.update({
         where: { id: draft.id },
         data: {
           status: 'PUBLISHED',
           publishedAt: now,
           autoPublished: true,
+          seoTitle: optimizedSeo.seoTitle,
+          metaDescription: optimizedSeo.metaDescription,
+          canonicalUrl: optimizedSeo.canonicalUrl,
+          imageAlt: optimizedSeo.imageAlt,
+          tags: JSON.stringify(optimizedSeo.tags),
         },
       });
 

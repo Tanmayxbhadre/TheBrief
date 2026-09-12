@@ -3,6 +3,7 @@ import { aiService } from './service';
 import { GenerateDraftRequest, StructuredArticleDraft } from './types';
 import { SOURCES } from '../news/sourceRegistry';
 import { revalidateNewsPublication } from '../cache/revalidateNews';
+import { optimizeArticleSeo } from '../seo/optimizer';
 
 export interface QualityEvaluationResult {
   qualityScore: number;
@@ -349,18 +350,41 @@ export async function generateDraftForCluster(
     uniqueSlug = `${uniqueSlug}-${Date.now().toString().slice(-4)}`;
   }
 
+  // Run Automated SEO Optimizer
+  const optimizedSeo = optimizeArticleSeo({
+    title: draftData.title,
+    slug: uniqueSlug,
+    excerpt: draftData.excerpt,
+    content: draftData.content,
+    seoTitle: draftData.seoTitle,
+    metaDescription: draftData.metaDescription,
+    categorySlug: cluster.category?.slug,
+    authorName: 'THE BRIEF Editorial Team',
+    featuredImage: cluster.leadImageUrl || primaryItem.imageUrl || undefined,
+    imageAlt: primaryItem.imageAlt || draftData.title,
+    sources: draftData.sources,
+    quickSummary: draftData.quickSummary,
+    whatYouNeedToKnow: draftData.whatYouNeedToKnow,
+    tags: draftData.tags,
+  });
+
+  // Blend SEO score with editorial quality score
+  const compositeQuality = Math.round((qualityScore * 0.6) + (optimizedSeo.auditResult.score * 0.4));
+
   const editorialMetadata = {
     decision: evaluation.decision,
     decisionReason: evaluation.decisionReason,
     notes: evaluation.notes,
     confidenceScore: evaluation.publishConfidence,
-    qualityScore: qualityScore,
+    qualityScore: compositeQuality,
+    seoScore: optimizedSeo.auditResult.score,
+    seoGrade: optimizedSeo.auditResult.grade,
     sourceReliability: avgReliability,
     sourceCount: cluster.items.length,
     isSensitive: evaluation.isSensitive,
   };
 
-  // Create ArticleDraft
+  // Create ArticleDraft with fully optimized SEO attributes
   const createdDraft = await prisma.articleDraft.create({
     data: {
       newsItemId: primaryItem.id,
@@ -373,12 +397,12 @@ export async function generateDraftForCluster(
       subcategory: draftData.subcategory || primaryItem.subcategory,
       authorName: 'THE BRIEF Editorial Team',
       featuredImage: cluster.leadImageUrl || primaryItem.imageUrl || undefined,
-      imageAlt: primaryItem.imageAlt || draftData.title,
+      imageAlt: optimizedSeo.imageAlt,
       status: draftStatus,
-      seoTitle: draftData.seoTitle,
-      metaDescription: draftData.metaDescription,
-      canonicalUrl: `https://thebrief.in/${cluster.category?.slug || 'news'}/${uniqueSlug}`,
-      tags: JSON.stringify(draftData.tags),
+      seoTitle: optimizedSeo.seoTitle,
+      metaDescription: optimizedSeo.metaDescription,
+      canonicalUrl: optimizedSeo.canonicalUrl,
+      tags: JSON.stringify(optimizedSeo.tags),
       sources: JSON.stringify(draftData.sources),
       quickSummary: JSON.stringify(draftData.quickSummary),
       whatYouNeedToKnow: draftData.whatYouNeedToKnow ? JSON.stringify(draftData.whatYouNeedToKnow) : null,
@@ -389,7 +413,7 @@ export async function generateDraftForCluster(
       aiGenerated: true,
       aiProvider: aiResponse.provider,
       aiModel: aiResponse.model,
-      aiQualityScore: qualityScore,
+      aiQualityScore: compositeQuality,
       publishConfidence: evaluation.publishConfidence,
       autoPublished: shouldAutoPublish,
       aiFlags: JSON.stringify(draftData.reviewFlags),

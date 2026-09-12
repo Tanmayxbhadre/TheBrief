@@ -14,6 +14,7 @@ import RelatedStories from '@/components/article/RelatedStories';
 import AdSlot from '@/components/shared/AdSlot';
 import SchemaOrg from '@/components/seo/SchemaOrg';
 import SocialShare from '@/components/article/SocialShare';
+import ReadingProgressBar from '@/components/article/ReadingProgressBar';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
@@ -82,6 +83,7 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <>
+      <ReadingProgressBar />
       <SchemaOrg article={article} pageType="article" />
 
       <article itemScope itemType="https://schema.org/NewsArticle">

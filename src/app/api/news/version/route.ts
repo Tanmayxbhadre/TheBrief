@@ -6,15 +6,25 @@ export const revalidate = 0;
 
 /**
  * Lightweight News Version Check API
- * Allows the client-side live refresh component to check if new news was published
- * without downloading the entire homepage or polling heavyweight endpoints.
+ * Allows client-side live listeners across the entire site to check if new stories
+ * have been published without downloading large payloads.
  */
 export async function GET() {
   try {
     const [latestArticle, count] = await Promise.all([
       prisma.articleDraft.findFirst({
         where: { status: 'PUBLISHED' },
-        select: { id: true, publishedAt: true, updatedAt: true },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          breaking: true,
+          publishedAt: true,
+          updatedAt: true,
+          category: {
+            select: { slug: true, name: true },
+          },
+        },
         orderBy: { publishedAt: 'desc' },
       }),
       prisma.articleDraft.count({
@@ -32,9 +42,14 @@ export async function GET() {
 
     return NextResponse.json(
       {
+        latestArticleId: latestArticle?.id || null,
+        latestTitle: latestArticle?.title || null,
+        latestSlug: latestArticle?.slug || null,
+        categorySlug: latestArticle?.category?.slug || 'news',
+        categoryName: latestArticle?.category?.name || 'General',
+        isBreaking: latestArticle?.breaking || false,
         latestPublishedAt,
         latestUpdatedAt,
-        latestArticleId: latestArticle?.id || null,
         count,
         timestamp: Date.now(),
       },

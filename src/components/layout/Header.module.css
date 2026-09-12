@@ -12,8 +12,13 @@
   /* ALWAYS fully opaque — eliminates the content bleed-through on scroll */
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
-  /* No backdrop-filter, no rgba — these cause content to show through */
   transition: box-shadow var(--transition-base);
+}
+
+@media (max-width: 1023px) {
+  .header {
+    height: auto;
+  }
 }
 
 .header.scrolled {
@@ -25,7 +30,7 @@
 .inner {
   display: flex;
   align-items: center;
-  height: 100%;
+  height: var(--header-height);
   gap: var(--space-6);
 }
 
@@ -112,8 +117,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
   transition: color var(--transition-fast), background var(--transition-fast);

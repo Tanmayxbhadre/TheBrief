@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Menu, X } from 'lucide-react';
 import MobileMenu from './MobileMenu';
+import MobileCategoryBar from './MobileCategoryBar';
 import styles from './Header.module.css';
 
 const NAV_LINKS = [
@@ -111,6 +112,9 @@ export default function Header() {
           </div>
 
         </div>
+
+        {/* Mobile Swipeable Category Bar */}
+        <MobileCategoryBar />
       </header>
 
       <MobileMenu

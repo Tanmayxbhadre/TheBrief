@@ -11,13 +11,15 @@ interface SchemaOrgProps {
 export default function SchemaOrg({ article }: SchemaOrgProps) {
   const organizationSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
+    '@type': ['Organization', 'NewsMediaOrganization'],
     '@id': `${SITE_URL}/#organization`,
     name: SITE_NAME,
     url: SITE_URL,
     logo: {
       '@type': 'ImageObject',
       url: `${SITE_URL}/logo.png`,
+      width: 600,
+      height: 60,
     },
     sameAs: [
       'https://twitter.com/thebrief',
@@ -65,12 +67,49 @@ export default function SchemaOrg({ article }: SchemaOrgProps) {
         },
         articleSection: article.category.name,
         keywords: article.tags.join(', '),
-        wordCount: article.content.split(/\s+/).length,
+        wordCount: article.content ? article.content.split(/\s+/).filter(Boolean).length : undefined,
         timeRequired: `PT${article.readingTime}M`,
+        // Google Assistant & Voice Search Speakable specification
+        speakable: {
+          '@type': 'SpeakableSpecification',
+          cssSelector: ['h1', '.headline', '.description', '#article-summary'],
+        },
       }
     : null;
 
-  const schemas = [organizationSchema, websiteSchema, ...(articleSchema ? [articleSchema] : [])];
+  const breadcrumbSchema = article
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: SITE_URL,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: article.category.name,
+            item: `${SITE_URL}/${article.category.slug}`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: article.title,
+            item: `${SITE_URL}/${article.category.slug}/${article.slug}`,
+          },
+        ],
+      }
+    : null;
+
+  const schemas = [
+    organizationSchema,
+    websiteSchema,
+    ...(articleSchema ? [articleSchema] : []),
+    ...(breadcrumbSchema ? [breadcrumbSchema] : []),
+  ];
 
   return (
     <>

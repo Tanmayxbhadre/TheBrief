@@ -1,0 +1,82 @@
+/* MobileCategoryBar.module.css */
+
+.container {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .container {
+    display: block;
+    position: relative;
+    width: 100%;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border-light);
+    overflow: hidden;
+  }
+
+  /* Fade masks on sides to indicate scrollability */
+  .fadeLeft,
+  .fadeRight {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .fadeLeft {
+    left: 0;
+    background: linear-gradient(to right, var(--color-bg), transparent);
+  }
+
+  .fadeRight {
+    right: 0;
+    background: linear-gradient(to left, var(--color-bg), transparent);
+  }
+
+  .scrollRail {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px var(--space-4);
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollRail::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+    min-height: 32px;
+  }
+
+  .chip:active,
+  .chip:hover {
+    color: var(--color-text);
+    background: var(--color-bg-secondary);
+  }
+
+  .chipActive {
+    color: var(--color-text);
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border);
+    font-weight: 600;
+  }
+}
